@@ -1,0 +1,21 @@
+<div id="module-generator-options" class="card-body p-0 d-flex flex-wrap overflow-y">
+    <div class="optionscontainer w-100">
+        {{#categories}}
+            <div class="category">
+                <div class="subcategory d-flex justify-content-between" onclick="this.parentElement.classList.toggle('dixeo-collapsed');">
+                    <span>{{name}}</span>
+                    <span class="dixeo-module-generator-toggle">
+                        <i class="fa fa-chevron-down"></i>
+                    </span>
+                </div>
+                {{#items}}
+                    {{>block_dixeo_modulegen/item}}
+                {{/items}}
+            </div>
+        {{/categories}}
+    </div>
+</div>
+<div class="card-footer p-3">
+
+</div>
+{{>block_dixeo_modulegen/modal}}

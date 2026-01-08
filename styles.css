@@ -1,0 +1,284 @@
+.block_dixeo_modulegen {
+    margin-bottom: 0 !important;
+    border-radius: 0;
+}
+
+.block_dixeo_modulegen .card {
+    border-radius: 0px;
+}
+
+.block_dixeo_modulegen > .card-body {
+    padding: 0 !important;
+}
+
+.block_dixeo_modulegen > .card-body > .card-text {
+    margin: 0 !important;
+    width: 100%;
+}
+
+.block_dixeo_modulegen .card-header {
+    color: var(--primary);
+}
+
+.block_dixeo_modulegen .stats-container,
+.modal .stats-container {
+    overflow: hidden;
+    max-width: 440px;
+    margin: auto;
+
+    .stat {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #dddddd;
+        border: 1px solid #dddddd;
+        cursor: pointer;
+
+        &.active {
+            color: #347a33;
+        }
+
+        .count {
+            background-color: #575757;
+            border-radius: 50%;
+            font-weight: bold;
+            color: white;
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            top: 10px;
+            right: calc(50% - 30px);
+        }
+    }
+}
+
+.block_dixeo_modulegen #module-generator-options {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 310px !important;
+    max-height: 360px !important;
+}
+
+.block_dixeo_modulegen #module-generator-options .optioninfo {
+    width: 32%;
+    display: inline-block;
+    transform: scale(0.9);
+}
+
+.block_dixeo_modulegen #module-generator-options a {
+    cursor: pointer;
+}
+
+.block_dixeo_modulegen #module-generator-options a.draggable {
+    cursor: grab;
+}
+
+.block_dixeo_modulegen #module-generator-options a:hover {
+    text-decoration: none;
+}
+
+.block_dixeo_modulegen #module-generator-options a.disabled {
+    filter: grayscale(100%);
+    cursor: not-allowed;
+}
+
+.block_dixeo_modulegen #module-generator-options a.disabled * {
+    font-style: normal;
+}
+
+.block_dixeo_modulegen #module-generator-options .optionname {
+    color: #575757;
+}
+
+.task-list .activityiconcontainer img ,
+.block_dixeo_modulegen .optionicon img {
+    filter: brightness(0) invert(1);
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    height: 30px;
+}
+
+.task-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 15px;
+
+    .activityiconcontainer {
+        min-width: 52px;
+    }
+
+    .task-title {
+        font-weight: bold;
+    }
+
+    .task-details h5 {
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+
+    /* Hide queued/progress indicators by default, show timestamp */
+    .task-item .task-queued,
+    .task-item .task-progress,
+    .task-item.status_0 .task-timestamp,
+    .task-item.status_1 .task-timestamp {
+        display: none;
+    }
+
+    /* Show queued indicator for pending (0), progress for processing (1) */
+    .task-item.status_0 .task-queued,
+    .task-item.status_1 .task-progress {
+        display: block;
+    }
+
+    .task-timestamp {
+        max-width: 450px;
+        word-wrap: break-word;
+        max-height: 56px;
+        overflow: hidden;
+    }
+}
+
+.queue-container[data-filter="queued"] .stat.queued,
+.queue-container[data-filter="processing"] .stat.processing,
+.queue-container[data-filter="completed"] .stat.completed {
+    background-color: #f1f1f1;
+}
+
+.queue-container .task-item {
+    display: none !important;
+}
+
+/* Filter visibility based on new status values:
+   0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED, 4=CANCELLED */
+.queue-container[data-filter="all"] .task-item,
+.queue-container[data-filter="queued"] .task-item.status_0,
+.queue-container[data-filter="processing"] .task-item.status_1,
+.queue-container[data-filter="completed"] .task-item.status_2,
+.queue-container[data-filter="completed"] .task-item.status_3,
+.queue-container[data-filter="completed"] .task-item.status_4 {
+    display: flex !important;
+}
+
+
+.block_dixeo_modulegen .optionscontainer > div {
+    margin-bottom: 30px;
+}
+
+.block_dixeo_modulegen .optionscontainer .dixeo-collapsed {
+    margin: 0;
+}
+
+.block_dixeo_modulegen #module-generator-options .dixeo-collapsed .optioninfo {
+    display: none;
+}
+
+.block_dixeo_modulegen #module-generator-options .dixeo-collapsed .dixeo-module-generator-toggle {
+    transform: rotate(90deg);
+}
+
+.block_dixeo_modulegen .optionscontainer .subcategory {
+    color: #575757;
+    margin-bottom: 10px;
+    font-weight: 600;
+    border-bottom: 1px solid #e3e3e3;
+    padding: 10px;
+}
+
+.course-content .dd-drop-down {
+    border-bottom: 1px solid #1d2125;
+    margin-bottom: -1px;
+}
+
+#generationModal #instructions {
+    font-size: 16px;
+}
+
+/* Edit mode styles */
+.editing .block_dixeo_modulegen > .card-body > .card-text {
+    display: block;
+    margin-top: 25px !important;
+}
+
+
+
+/* Generation modal */
+#generationModal #prompt-form textarea {
+    border: none;
+    padding: 20px;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+    min-height: 90px;
+}
+
+#generationModal #instructions {
+    overflow-y: hidden;
+    min-height: 60px;
+    max-height: 200px;
+}
+
+#generationModal #generate_button {
+    right: 3%;
+    height: 35px;
+    background-color: #108df0;
+    font-weight: 700;
+    padding: 5px 10px;
+}
+
+#generationModal #generate_button:focus,
+#generationModal #generate_button.focus {
+    box-shadow: none;
+}
+
+#generationModal #generate_button img {
+    position: relative;
+    margin-right: 5px;
+}
+
+#generationModal .p64 {
+    padding: 15px 0px 25px 0;
+}
+
+@media (max-width: 790px) {
+    #generationModal .p64 {
+        padding: 15px 0px 40px 0;
+    }
+}
+
+#generationModal .modal-dialog {
+    transform: translate(0, 50%);
+}
+
+#generationModal .modal-content {
+    border-radius: 1.2rem;
+}
+
+#generationModal .modal-header {
+    width: 100%;
+}
+
+#generationModal .modal-title {
+    width: 100%;
+    font-size: 30px;
+    color: var(--primary);
+}
+
+#generationModal .modal-body {
+    padding: 50px;
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+    --tw-gradient-from: #eff6ff var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(239 246 255 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), #fff var(--tw-gradient-via-position), var(--tw-gradient-to);
+    --tw-gradient-to: #faf5ff var(--tw-gradient-to-position);
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 750px;
+    }
+}

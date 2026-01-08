@@ -1,0 +1,63 @@
+<?php
+/**
+ * Language strings for the Dixeo Module Generator block.
+ *
+ * @package    block_dixeo_modulegen
+ * @copyright  2026 Edunao SAS (contact@edunao.com)
+ * @author     Pierre FACQ <pierre.facq@edunao.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+$string['pluginname'] = 'Dixeo Content Generator';
+$string['blocktitle'] = 'Add AI generated content';
+$string['dixeo_modulegen:addinstance'] = 'Add a Dixeo Content Generator block';
+$string['dixeo_modulegen:myaddinstance'] = 'Add a Dixeo Content Generator block to Dashboard';
+
+$string['aiactivities'] = 'Generate';
+$string['notavailable'] = 'This module is not available or not properly configured. Please try again later or contact your administrator.';
+
+$string['generate'] = 'Generate';
+$string['prompt_placeholder'] = 'Editing instructions for the AI';
+$string['loading'] = 'Generating...';
+
+$string['error_title'] = 'Oops!';
+$string['error_unsupported_module'] = 'Unsupported module type: {$a}';
+$string['error_queue_failed'] = 'Failed to add task to the generation queue.';
+$string['success_title'] = 'Success!';
+$string['success_message'] = 'A new content generation task has been added to the queue.';
+$string['generation_complete'] = 'Your content has been generated successfully! Refresh the page to see it.';
+
+// Queue management.
+$string['queue_processor'] = 'Dixeo Content Generation Queue Processor';
+$string['queuemodaltitle'] = 'Generation Queue';
+$string['notasksinthequeue'] = 'The task queue is currently empty.';
+$string['queued'] = 'Queued';
+$string['processing'] = 'Processing';
+$string['completed'] = 'Completed';
+$string['cancelled'] = 'Cancelled';
+$string['canceltask'] = 'Cancel';
+$string['canceltaskconfirm'] = 'Are you sure you want to cancel this task? This action cannot be undone.';
+$string['taskcancelled'] = 'The task has been cancelled successfully.';
+$string['taskcancelerror'] = 'An error occurred while trying to cancel the task. Please try again later.';
+
+$string['generationqueued'] = 'Waiting in queue';
+$string['generationinprogress'] = 'Generation in progress (<span class="elapsed-time">0:00</span>)';
+$string['generationfailed'] = 'Generation failed';
+$string['generationcancelled'] = 'Generation cancelled';
+
+// Status strings (matching queue_service constants).
+$string['status_0'] = 'Pending';
+$string['status_1'] = 'Processing';
+$string['status_2'] = 'Completed';
+$string['status_3'] = 'Failed';
+$string['status_4'] = 'Cancelled';
+
+// Time strings.
+$string['timecreated'] = 'Created at: {$a}';
+$string['timestarted'] = 'Started at: {$a}';
+$string['timecompleted'] = 'Completed at: {$a}';
+$string['timecancelled'] = 'Cancelled at: {$a}';
+
+// Categories.
+$string['category_content'] = 'Content';
+$string['category_assessment'] = 'Assessment';

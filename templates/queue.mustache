@@ -1,0 +1,13 @@
+<div class="queue-container" data-filter="{{activeFilter}}">
+    {{>block_dixeo_modulegen//queue_stats}}
+    <div class="task-list m-3">
+        {{#tasks}}
+            {{>block_dixeo_modulegen//task}}
+        {{/tasks}}
+        {{^tasks}}
+            <div class="no-tasks">
+                {{#str}}notasksinthequeue, block_dixeo_modulegen{{/str}}
+            </div>
+        {{/tasks}}
+    </div>
+</div>

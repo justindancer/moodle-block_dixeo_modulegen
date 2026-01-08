@@ -1,0 +1,61 @@
+<div class="task-item status_{{status}} d-flex my-4"
+    data-task-id="{{id}}"
+    data-module-name="{{modulename}}"
+    data-status="{{status}}"
+    data-timestarted="{{timestarted}}"
+    data-sortorder="{{sortorder}}"
+>
+    <div class="activityiconcontainer mt-2" style="background-color: {{backgroundColor}};">
+        {{!#options.beta}}
+        {{!
+            <div class="badge badge-warning" style="position: absolute; left: 60px; margin-top: -50px;">Beta</div>
+        }}
+        {{!/options.beta}}
+        <img src="{{iconurl}}" alt="{{displayname}} icon"/>
+    </div>
+    <div class="task-details d-flex flex-column justify-content-center mx-3">
+        <h5>{{displayname}}</h5>
+        {{#title}}
+            {{#link}}
+                <a class="task-title mb-1" href="{{link}}">{{title}}</a>
+            {{/link}}
+            {{^link}}
+                <span class="task-title mb-1">{{title}}</span>
+            {{/link}}
+        {{/title}}
+        {{^title}}
+            <span class="task-title mb-1">{{{generationstatus}}}</span>
+        {{/title}}
+        <div class="task-progress" style="width: 100%; max-width: 300px;">
+            <div class="progress" style="height: 20px; border-radius: 4px;">
+                <div class="progress-bar progress-bar-striped  progress-bar-animated bg-success" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" title="{{timestamp}}">{{#str}} processing, block_dixeo_modulegen {{/str}}...</div>
+            </div>
+        </div>
+        <div class="task-queued" style="width: 100%; max-width: 300px;">
+            <div class="progress" style="height: 20px; border-radius: 4px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" title="{{timestamp}}"></div>
+                <div class="text-muted" style="position: relative; top: 10px; left: 10px;">{{#str}} queued, block_dixeo_modulegen {{/str}}...</div>
+            </div>
+        </div>
+        {{#timestamp}}
+            <span class="task-timestamp small text-muted">{{timestamp}}</span>
+        {{/timestamp}}
+    </div>
+    <div class="task-actions ml-auto d-flex flex-column justify-content-center">
+        {{#isqueued}}
+            <button class="btn btn-sm btn-danger mb-2 cancel-task-button" data-task-id="{{id}}">
+                {{#str}} canceltask, block_dixeo_modulegen {{/str}}
+            </button>
+        {{/isqueued}}
+        {{#iscompleted}}
+            <div class="completed-icon text-success" title="{{statuslabel}}">
+                <i class="fa fa-check-circle fa-2x" aria-hidden="true"></i>
+            </div>
+        {{/iscompleted}}
+        {{#isfailed}}
+            <div class="completed-icon text-danger" title="{{statuslabel}}">
+                <i class="fa fa-times-circle fa-2x" aria-hidden="true"></i>
+            </div>
+        {{/isfailed}}
+    </div>
+</div>

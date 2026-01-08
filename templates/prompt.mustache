@@ -1,0 +1,28 @@
+<form id="dixeo_generator_form" class="generator-form" method="post">
+    <div class="modal-header">
+        <h5 class="modal-title text-center" id="generationModalLabel">{{generation_title}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span>&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="d-flex flex-column justify-content-center">
+            <div class="d-flex flex-column w-100">
+                <div id="prompt-form" class="form-group position-relative mb-0">
+                    <textarea id="instructions" name="instructions" class="form-control mb-2" placeholder="{{#str}} prompt_placeholder, block_dixeo_modulegen {{/str}}" required></textarea>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="origin" name="origin" value="{{origin}}">
+        <input type="hidden" id="courseid" name="courseid" value="{{courseid}}">
+        <input type="hidden" id="sectionnumber" name="sectionnumber" value="{{sectionid}}">
+        <input type="hidden" id="modulename" name="modulename" value="">
+        <input type="hidden" id="beforemod" name="beforemod" value="0">
+    </div>
+    <div class="modal-footer d-inline-flex justify-content-end w-100 p-2 px-3">
+        <button id="generate_button" class="btn btn-secondary btn-circle text-white d-flex align-items-center" title="{{#str}} generate, block_dixeo_modulegen {{/str}}">
+            <img src="{{config.wwwroot}}/blocks/dixeo_modulegen/pix/dixeo-white.svg" alt="Logo" width="25" height="25">
+            <span>{{#str}} generate, block_dixeo_modulegen {{/str}}</span>
+        </button>
+    </div>
+</form>
