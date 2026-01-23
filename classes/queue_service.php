@@ -21,6 +21,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Service class for queue business logic.
  *
+ * Handles all business logic related to the module generation queue including:
+ * - Task submission and queuing
+ * - Task state transitions (pending, processing, completed, failed, cancelled)
+ * - Automatic queue processing (starting next task when current completes)
+ * - Integration with external API for job submission
+ *
  * @package    block_dixeo_modulegen
  * @copyright  2026 Edunao SAS (contact@edunao.com)
  * @author     Pierre FACQ <pierre.facq@edunao.com>

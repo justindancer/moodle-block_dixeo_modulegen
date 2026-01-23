@@ -1,6 +1,17 @@
-<div class="queue-container" data-filter="{{activeFilter}}">
-    {{>block_dixeo_modulegen//queue_stats}}
-    <div class="task-list m-3">
+<div class="queue-container d-flex flex-column" data-filter="{{activeFilter}}" style="height: 100%;">
+    <div class="queue-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom flex-shrink-0">
+        <span class="font-weight-bold">{{#str}}queuemodaltitle, block_dixeo_modulegen{{/str}}</span>
+        <button class="btn btn-sm btn-link queue-close-button" type="button" aria-label="{{#str}}close, moodle{{/str}}">
+            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+        </button>
+    </div>
+    <div class="queue-loading d-flex justify-content-center align-items-center p-4" style="display: none; flex: 1;">
+        <div class="text-center">
+            <i class="fa fa-spinner fa-pulse fa-2x text-muted" aria-hidden="true"></i>
+            <div class="mt-2 text-muted">{{#str}}loading, moodle{{/str}}</div>
+        </div>
+    </div>
+    <div class="task-list m-3 flex-grow-1" style="overflow-y: auto;">
         {{#tasks}}
             {{>block_dixeo_modulegen//task}}
         {{/tasks}}

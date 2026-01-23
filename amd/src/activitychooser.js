@@ -1,6 +1,12 @@
 /**
  * Activity chooser for AI module generation.
  *
+ * Main entry point for the block's JavaScript functionality. Handles:
+ * - Fetching available module types from the API
+ * - Transforming module data into categorized display format
+ * - Rendering the activity chooser interface
+ * - Initializing queue_status and ai_action modules
+ *
  * @module     block_dixeo_modulegen/activitychooser
  * @copyright  2026 Edunao SAS (contact@edunao.com)
  * @author     Pierre FACQ <pierre.facq@edunao.com>

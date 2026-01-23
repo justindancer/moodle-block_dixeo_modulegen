@@ -18,6 +18,9 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Repository class for queue database operations.
  *
+ * Provides a clean data access layer for all queue-related database operations.
+ * All database queries for the queue table should go through this repository.
+ *
  * @package    block_dixeo_modulegen
  * @copyright  2026 Edunao SAS (contact@edunao.com)
  * @author     Pierre FACQ <pierre.facq@edunao.com>
@@ -25,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 class queue_repository {
 
-    /** @var string Database table name. */
+    /** @var string Database table name for the queue. */
     public const TABLE = 'block_dixeo_modulegen_queue';
 
     /**

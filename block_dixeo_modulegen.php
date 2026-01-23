@@ -15,11 +15,35 @@ defined('MOODLE_INTERNAL') || die();
  * Block class for the Dixeo Module Generator.
  *
  * Displays an AI module generation interface in courses.
+ * Provides functionality for generating course modules using AI.
+ *
+ * @package    block_dixeo_modulegen
+ * @copyright  2026 Edunao SAS (contact@edunao.com)
+ * @author     Josemaria Bolanos <admin@mako.digital>
+ * @author     Pierre FACQ <pierre.facq@edunao.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_dixeo_modulegen extends block_base {
 
+    /** @var string[] Allowed page paths where the block can be displayed. */
+    private const ALLOWED_PAGE_PATHS = [
+        '/course/view.php',
+        '/course/section.php',
+    ];
+
+    /** @var string Required capability to view the block. */
+    private const REQUIRED_CAPABILITY = 'moodle/course:manageactivities';
+
+    /** @var string Default pagetype pattern for block instances. */
+    private const DEFAULT_PAGETYPE_PATTERN = 'course-view-*';
+
+    /** @var int Default weight for block instances. */
+    private const DEFAULT_WEIGHT = -5;
+
     /**
      * Initialize the block.
+     *
+     * Sets the block title from language strings.
      */
     public function init(): void {
         $this->title = get_string('blocktitle', 'block_dixeo_modulegen');
@@ -67,7 +91,11 @@ class block_dixeo_modulegen extends block_base {
     /**
      * Get block content.
      *
-     * @return stdClass|null The block content.
+     * Renders the block content if the user has the required capability
+     * and is on an allowed page. Initializes JavaScript modules and renders
+     * the card template.
+     *
+     * @return stdClass|null The block content object, or null if not accessible.
      */
     public function get_content(): ?stdClass {
         global $OUTPUT, $COURSE, $CFG;
@@ -78,67 +106,95 @@ class block_dixeo_modulegen extends block_base {
             return $this->content;
         }
 
-        $context = context_course::instance($COURSE->id);
-        if (!has_capability('moodle/course:manageactivities', $context)) {
+        // Check user capability.
+        if (!$this->can_user_view_block($COURSE->id)) {
             return $this->content;
         }
 
-        // Only display on course view pages.
-        $targets = [
-            '/course/view.php',
-            '/course/section.php',
-        ];
-        $url = $this->page->url->get_path();
-        $ondisplaypage = false;
-        foreach ($targets as $target) {
-            if (str_contains($url, $target)) {
-                $ondisplaypage = true;
-                break;
-            }
-        }
-
-        if (!$ondisplaypage) {
+        // Check if on allowed page.
+        if (!$this->is_allowed_page()) {
             return $this->content;
         }
 
-        $this->page->requires->css('/blocks/dixeo_modulegen/styles.css');
-
+        // Initialize content structure.
         $this->content = new stdClass();
         $this->content->footer = '';
+        $this->content->text = '';
 
-        $text = '';
+        // Load CSS.
+        $this->page->requires->css('/blocks/dixeo_modulegen/styles.css');
 
+        // Initialize JavaScript and render template.
         if ($this->page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
-            // Only load activitychooser - it initializes queue_status internally.
-            // ai_action is initialized by the modal template when rendered.
-            $this->page->requires->js_call_amd('block_dixeo_modulegen/activitychooser', 'init', [$COURSE->id]);
-
-            // Render the template.
-            $text = $OUTPUT->render_from_template('block_dixeo_modulegen/card', []);
+            $this->initialize_javascript($COURSE->id);
+            $this->content->text = $OUTPUT->render_from_template('block_dixeo_modulegen/card', []);
         }
-
-        $this->content->text = $text;
 
         return $this->content;
     }
 
     /**
+     * Check if the current user can view the block.
+     *
+     * @param int $courseid The course ID.
+     * @return bool True if user has required capability.
+     */
+    private function can_user_view_block(int $courseid): bool {
+        $context = context_course::instance($courseid);
+        return has_capability(self::REQUIRED_CAPABILITY, $context);
+    }
+
+    /**
+     * Check if the current page is an allowed page for the block.
+     *
+     * @return bool True if the current page path matches allowed paths.
+     */
+    private function is_allowed_page(): bool {
+        $url = $this->page->url->get_path();
+        foreach (self::ALLOWED_PAGE_PATHS as $path) {
+            if (str_contains($url, $path)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Initialize JavaScript modules for the block.
+     *
+     * Loads the activitychooser module which initializes queue_status internally.
+     * The ai_action module is initialized by the modal template when rendered.
+     *
+     * @param int $courseid The course ID.
+     */
+    private function initialize_javascript(int $courseid): void {
+        $this->page->requires->js_call_amd(
+            'block_dixeo_modulegen/activitychooser',
+            'init',
+            [$courseid]
+        );
+    }
+
+    /**
      * Handle block instance creation.
      *
-     * Configures the block to show in subcontexts and sets default weight.
+     * Configures the block instance to show in subcontexts and sets
+     * default pagetype pattern and weight for optimal display.
      *
-     * @return bool True on success.
+     * @return bool True on success, false on failure.
      */
     public function instance_create(): bool {
         global $DB;
 
-        // Configure the block instance.
         $bi = $DB->get_record('block_instances', ['id' => $this->instance->id]);
-        $bi->showinsubcontexts = 1;
-        $bi->pagetypepattern = 'course-view-*';
-        $bi->defaultweight = -5;
-        $DB->update_record('block_instances', $bi);
+        if (!$bi) {
+            return false;
+        }
 
-        return true;
+        $bi->showinsubcontexts = 1;
+        $bi->pagetypepattern = self::DEFAULT_PAGETYPE_PATTERN;
+        $bi->defaultweight = self::DEFAULT_WEIGHT;
+
+        return $DB->update_record('block_instances', $bi);
     }
 }

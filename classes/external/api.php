@@ -29,6 +29,19 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Unified external API class for module generation.
+ *
+ * Provides all web service functions for the block:
+ * - submit_generation: Queue a new module generation request
+ * - get_queue_status: Get tasks and statistics for a course
+ * - update_task: Complete, fail, or cancel a task
+ *
+ * All methods include proper parameter validation, capability checks,
+ * and standardized error handling.
+ *
+ * @package    block_dixeo_modulegen
+ * @copyright  2026 Edunao SAS (contact@edunao.com)
+ * @author     Pierre FACQ <pierre.facq@edunao.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class api extends external_api {
 

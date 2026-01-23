@@ -20,6 +20,12 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Presenter class for queue data formatting.
  *
+ * Transforms raw database records into display-ready structures for the UI.
+ * Handles all data formatting including:
+ * - Task record enrichment with display data (links, titles, timestamps)
+ * - Status label generation
+ * - Statistics aggregation from status counts
+ *
  * @package    block_dixeo_modulegen
  * @copyright  2026 Edunao SAS (contact@edunao.com)
  * @author     Josemaria Bolanos <admin@mako.digital>

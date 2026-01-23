@@ -1,10 +1,12 @@
 /**
  * AI action handler for module generation.
  *
- * Handles the generation modal form submission. This module is UI-only:
+ * Handles the generation modal form submission and UI state. This module is UI-only:
  * - Modal display and form handling
  * - Form validation and state management
+ * - Prevents modal closing during generation
  * - Delegates job submission to job_manager.js
+ * - Refreshes course sections when modules are created
  *
  * @module     block_dixeo_modulegen/ai_action
  * @copyright  2026 Edunao SAS (contact@edunao.com)
