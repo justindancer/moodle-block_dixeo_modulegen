@@ -26,37 +26,18 @@ define([
     let categories = null;
 
     /**
-     * Module metadata for UI display.
-     *
-     * Maps module type to category, icon URL, and background color. The 4 supported
-     * types (page, label, quiz, glossary) are standard Moodle modules always present.
-     */
-    const MODULE_METADATA = {
-        page: {
-            category: 'content',
-            backgroundColor: '#399be2'
-        },
-        label: {
-            category: 'content',
-            backgroundColor: '#399be2'
-        },
-        glossary: {
-            category: 'content',
-            backgroundColor: '#399be2'
-        },
-        quiz: {
-            category: 'assessment',
-            backgroundColor: '#eb66a2'
-        }
-    };
-
-    /**
      * Get the icon URL for a module type.
      *
      * @param {string} type - The module type (page, label, etc.).
+     * @param {string} component - The Moodle component (mod_page, mod_quiz, etc.).
      * @returns {string} The icon URL.
      */
-    const getModuleIconUrl = (type) => {
+    const getModuleIconUrl = (type, component) => {
+        // Standard Moodle modules use /mod/{type}/pix/monologo.svg
+        if (component && component.startsWith('mod_')) {
+            return M.cfg.wwwroot + '/mod/' + type + '/pix/monologo.svg';
+        }
+        // Fallback for non-standard modules
         return M.cfg.wwwroot + '/mod/' + type + '/pix/monologo.svg';
     };
 
@@ -64,6 +45,7 @@ define([
      * Transform the local_dixeo API response to the block UI format.
      *
      * Converts the flat list of types into categorized items with display metadata.
+     * All module types from the API are displayed, using Moodle's native styling.
      *
      * @param {Object} response - The API response from local_dixeo_get_module_types.
      * @param {Object} categoryStrings - The localized category name strings.
@@ -74,44 +56,51 @@ define([
             return {categories: []};
         }
 
-        const categoryMap = {
-            content: {
-                name: categoryStrings.content,
-                items: []
-            },
-            assessment: {
-                name: categoryStrings.assessment,
-                items: []
-            }
-        };
+        // Build categories dynamically from API response.
+        const categoryMap = {};
 
         response.types.forEach(moduleType => {
-            const type = moduleType.type;
-            const meta = MODULE_METADATA[type];
+            const category = moduleType.category || 'content';
 
-            // Skip unknown module types not in our metadata.
-            if (!meta) {
-                return;
+            // Create category if it doesn't exist.
+            if (!categoryMap[category]) {
+                categoryMap[category] = {
+                    name: categoryStrings[category] || category,
+                    items: []
+                };
             }
 
+            const installed = moduleType.installed !== false;
             const item = {
-                shortname: type,
-                displayname: moduleType.name || type,
+                shortname: moduleType.type,
+                displayname: moduleType.label || moduleType.type,
                 description: moduleType.description || '',
-                iconurl: getModuleIconUrl(type),
-                backgroundColor: meta.backgroundColor,
+                iconurl: getModuleIconUrl(moduleType.type, moduleType.component),
+                category: category,
+                installed: installed,
+                component: moduleType.component || ('mod_' + moduleType.type),
                 options: {
                     href: '#',
-                    enabled: moduleType.supported !== false,
+                    enabled: installed && moduleType.supported !== false,
                     beta: false
                 }
             };
 
-            categoryMap[meta.category].items.push(item);
+            categoryMap[category].items.push(item);
         });
 
-        // Filter out empty categories and convert to array.
-        const categoriesArray = Object.values(categoryMap).filter(cat => cat.items.length > 0);
+        // Convert to array, keeping a consistent order (content first, then others, assessment last).
+        const order = ['content', 'resource', 'collaboration', 'communication', 'assessment'];
+        const categoriesArray = order
+            .filter(cat => categoryMap[cat])
+            .map(cat => categoryMap[cat]);
+
+        // Add any categories not in the predefined order.
+        Object.keys(categoryMap).forEach(cat => {
+            if (!order.includes(cat)) {
+                categoriesArray.push(categoryMap[cat]);
+            }
+        });
 
         return {categories: categoriesArray};
     };
@@ -123,8 +112,9 @@ define([
      */
     const getAvailableModules = async() => {
         // Fetch category strings and API data in parallel.
-        const [contentStr, assessmentStr, apiResponse] = await Promise.all([
+        const [contentStr, resourceStr, assessmentStr, apiResponse] = await Promise.all([
             Str.get_string('category_content', 'block_dixeo_modulegen'),
+            Str.get_string('category_resource', 'block_dixeo_modulegen'),
             Str.get_string('category_assessment', 'block_dixeo_modulegen'),
             Ajax.call([{
                 methodname: 'local_dixeo_get_module_types',
@@ -134,6 +124,7 @@ define([
 
         const categoryStrings = {
             content: contentStr,
+            resource: resourceStr,
             assessment: assessmentStr
         };
 

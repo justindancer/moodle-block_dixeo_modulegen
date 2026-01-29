@@ -34,7 +34,7 @@
         }
     }
 }}
-<div class="optioninfo text-center">
+<div class="optioninfo text-center position-relative">
     <a class="d-flex flex-column ai {{^options.enabled}} disabled {{/options.enabled}}"
         tabindex="-1"
         {{#options.enabled}}
@@ -43,7 +43,12 @@
             title="{{#str}} addnew, moodle, {{displayname}} {{/str}}"
         {{/options.enabled}}
         {{^options.enabled}}
-            title="{{#str}} notavailable, block_dixeo_modulegen{{/str}}"
+            {{^installed}}
+                title="{{#str}} pluginrequired, block_dixeo_modulegen, {{component}} {{/str}}"
+            {{/installed}}
+            {{#installed}}
+                title="{{#str}} notavailable, block_dixeo_modulegen{{/str}}"
+            {{/installed}}
         {{/options.enabled}}
         href="{{options.href}}"
         data-modal-title="{{#str}} addnew, moodle, {{displayname}} {{/str}}"
@@ -51,8 +56,9 @@
         data-section-number="{{sectionid}}"
     >
         {{#options.beta}}<div class="badge badge-warning" style="position: absolute; left: 50%;">Beta</div>{{/options.beta}}
-        <div class="optionicon mt-2 mb-1 mx-auto icon-no-margin modicon_{{shortname}} activityiconcontainer" style="background-color: {{backgroundColor}};">
-            <img src="{{iconurl}}" alt="{{displayname}} icon"/>
+        {{^installed}}<i class="fa fa-lock position-absolute" style="top: 4px; right: 4px; font-size: 12px; color: #6c757d;"></i>{{/installed}}
+        <div class="optionicon mt-2 mb-1 mx-auto icon-no-margin modicon_{{shortname}} activityiconcontainer smaller {{category}}">
+            <img class="activityicon" src="{{iconurl}}" alt="{{displayname}} icon" onerror="this.onerror=null;this.src='{{config.wwwroot}}/blocks/dixeo_modulegen/pix/monologo.svg'"/>
         </div>
         <div class="optionname clamp-2 bold">{{displayname}}</div>
     </a>

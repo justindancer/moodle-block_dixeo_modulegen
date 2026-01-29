@@ -61,4 +61,5 @@ $string['timecancelled'] = 'Annullato il: {$a}';
 
 // Categories.
 $string['category_content'] = 'Contenuto';
+$string['category_resource'] = 'Risorse';
 $string['category_assessment'] = 'Valutazione';

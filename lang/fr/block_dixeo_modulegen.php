@@ -16,6 +16,7 @@ $string['dixeo_modulegen:myaddinstance'] = 'Ajouter un bloc Générateur de cont
 
 $string['aiactivities'] = 'Générer';
 $string['notavailable'] = 'Ce module n\'est pas disponible ou n\'est pas correctement configuré. Veuillez réessayer plus tard ou contacter votre administrateur.';
+$string['pluginrequired'] = 'Installez le plugin {$a} pour générer ce type d\'activité.';
 
 $string['generate'] = 'Générer';
 $string['prompt_placeholder'] = 'Instructions d\'édition pour l\'IA';
@@ -61,4 +62,5 @@ $string['timecancelled'] = 'Annulé le : {$a}';
 
 // Categories.
 $string['category_content'] = 'Contenu';
+$string['category_resource'] = 'Ressources';
 $string['category_assessment'] = 'Évaluation';

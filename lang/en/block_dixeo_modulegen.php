@@ -16,6 +16,7 @@ $string['dixeo_modulegen:myaddinstance'] = 'Add a Dixeo Content Generator block 
 
 $string['aiactivities'] = 'Generate';
 $string['notavailable'] = 'This module is not available or not properly configured. Please try again later or contact your administrator.';
+$string['pluginrequired'] = 'Install the {$a} plugin to generate this activity type.';
 
 $string['generate'] = 'Generate';
 $string['prompt_placeholder'] = 'Editing instructions for the AI';
@@ -61,4 +62,5 @@ $string['timecancelled'] = 'Cancelled at: {$a}';
 
 // Categories.
 $string['category_content'] = 'Content';
+$string['category_resource'] = 'Resources';
 $string['category_assessment'] = 'Assessment';
