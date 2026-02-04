@@ -18,7 +18,7 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="lang" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="params" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Queue status: 0=pending, 1=processing, 2=completed, 3=failed, 4=cancelled (queue_status constants)"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="999" SEQUENCE="false"/>
         <FIELD NAME="jobid" TYPE="char" LENGTH="36" NOTNULL="true" SEQUENCE="false" COMMENT="Unique job identifier (UUID-style)"/>
         <FIELD NAME="timestarted" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

@@ -25,6 +25,8 @@ define([
     let instructionsTextarea = null;
     let isModalClosingDisabled = false;
     let initialized = false;
+    /** @type {Object|null} Set before opening modal for retry; consumed in handleModalShow. */
+    let retryContext = null;
 
     /**
      * Refresh the course section to show the newly created module.
@@ -88,6 +90,13 @@ define([
 
             $(generationModal).on('show.bs.modal', this.handleModalShow.bind(this));
 
+            document.addEventListener('generationModalRetry', (event) => {
+                if (event.detail) {
+                    retryContext = event.detail;
+                    $(generationModal).modal('show');
+                }
+            });
+
             // Listen for job completion to refresh course section.
             document.addEventListener('job-completed', (event) => {
                 const detail = event.detail;
@@ -107,12 +116,6 @@ define([
             FocusLock.untrapFocus();
             isModalClosingDisabled = false;
 
-            const button = event.relatedTarget;
-            const modalTitle = button.getAttribute('data-modal-title');
-            const moduleName = button.getAttribute('data-module-name');
-            const sectionNumber = button.getAttribute('data-section-number') ?? 0;
-            const beforeMod = button.getAttribute('data-before-mod');
-
             const form = generationModal.querySelector('form');
             const closeButton = generationModal.querySelector('.close');
             const generateButton = generationModal.querySelector('#generate_button');
@@ -121,33 +124,81 @@ define([
             const beforeModInput = generationModal.querySelector('input[name="beforemod"]');
             const modulenameInput = generationModal.querySelector('input[name="modulename"]');
             const sectionnumberInput = generationModal.querySelector('input[name="sectionnumber"]');
+            const courseidInput = generationModal.querySelector('input[name="courseid"]');
+            const retryTaskIdInput = generationModal.querySelector('input[name="retry_task_id"]');
             instructionsTextarea = generationModal.querySelector('#instructions');
 
-            if (titleElement) {
-                titleElement.textContent = modalTitle;
-            }
-            if (beforeModInput) {
-                beforeModInput.value = beforeMod;
-            }
-            if (modulenameInput) {
-                modulenameInput.value = moduleName;
-            }
-            if (sectionnumberInput) {
-                sectionnumberInput.value = sectionNumber;
-            }
-
-            if (instructionsTextarea) {
-                instructionsTextarea.value = '';
-                instructionsTextarea.readOnly = false;
-                this.initializeAutoResize(instructionsTextarea);
-
-                // Submit on Enter (Shift+Enter for newline).
-                instructionsTextarea.addEventListener('keydown', function(event) {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        generateButton.click();
+            if (retryContext) {
+                // Open for retry: prefill from failed task.
+                Str.get_string('retrygeneration', 'block_dixeo_modulegen').then((s) => {
+                    if (titleElement) {
+                        titleElement.textContent = s;
                     }
                 });
+                if (beforeModInput) {
+                    beforeModInput.value = retryContext.beforemod || '0';
+                }
+                if (modulenameInput) {
+                    modulenameInput.value = retryContext.modulename || '';
+                }
+                if (sectionnumberInput) {
+                    sectionnumberInput.value = retryContext.sectionnumber || '0';
+                }
+                if (courseidInput) {
+                    courseidInput.value = retryContext.courseid || '';
+                }
+                if (retryTaskIdInput) {
+                    retryTaskIdInput.value = retryContext.taskId || '';
+                }
+                if (instructionsTextarea) {
+                    instructionsTextarea.value = retryContext.instructions || '';
+                    instructionsTextarea.readOnly = false;
+                    this.initializeAutoResize(instructionsTextarea);
+                    instructionsTextarea.addEventListener('keydown', function(ev) {
+                        if (ev.key === 'Enter' && !ev.shiftKey) {
+                            ev.preventDefault();
+                            generateButton.click();
+                        }
+                    });
+                }
+                retryContext = null;
+            } else {
+                // Normal open from activity chooser button.
+                const button = event.relatedTarget;
+                if (retryTaskIdInput) {
+                    retryTaskIdInput.value = '';
+                }
+                if (button) {
+                    const modalTitle = button.getAttribute('data-modal-title');
+                    const moduleName = button.getAttribute('data-module-name');
+                    const sectionNumber = button.getAttribute('data-section-number') ?? 0;
+                    const beforeMod = button.getAttribute('data-before-mod');
+
+                    if (titleElement) {
+                        titleElement.textContent = modalTitle;
+                    }
+                    if (beforeModInput) {
+                        beforeModInput.value = beforeMod;
+                    }
+                    if (modulenameInput) {
+                        modulenameInput.value = moduleName;
+                    }
+                    if (sectionnumberInput) {
+                        sectionnumberInput.value = sectionNumber;
+                    }
+                }
+
+                if (instructionsTextarea) {
+                    instructionsTextarea.value = '';
+                    instructionsTextarea.readOnly = false;
+                    this.initializeAutoResize(instructionsTextarea);
+                    instructionsTextarea.addEventListener('keydown', function(ev) {
+                        if (ev.key === 'Enter' && !ev.shiftKey) {
+                            ev.preventDefault();
+                            generateButton.click();
+                        }
+                    });
+                }
             }
 
             if (closeButton) {
@@ -177,6 +228,7 @@ define([
             const closeButton = form.querySelector('.close');
             const generateButton = form.querySelector('#generate_button');
             const instructionsTextarea = form.querySelector('#instructions');
+            const retryTaskIdInput = form.querySelector('input[name="retry_task_id"]');
 
             if (!generateButton || !instructionsTextarea) {
                 Notification.exception({message: 'Required elements not found.'});
@@ -194,50 +246,79 @@ define([
             }
 
             const args = {
-                courseid: parseInt(form.courseid.value),
+                courseid: parseInt(form.courseid.value, 10),
                 modulename: form.modulename.value,
                 instructions: form.instructions.value,
-                sectionnumber: parseInt(form.sectionnumber.value),
-                beforemod: parseInt(form.beforemod.value),
+                sectionnumber: parseInt(form.sectionnumber.value, 10),
+                beforemod: parseInt(form.beforemod.value, 10),
             };
 
-            // Delegate to job manager - it handles polling and module creation.
-            JobManager.submitJob(args)
-                .then(() => {
-                    // Job submitted successfully - close modal.
-                    this.resetFormState(form, closeButton, generateButton, instructionsTextarea);
-                    // Notify queue_status to refresh its display.
-                    document.dispatchEvent(new Event('newTaskAdded'));
-                })
-                .catch((error) => {
-                    this.resetFormState(form, closeButton, generateButton, instructionsTextarea);
-
-                    Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
-                        Notification.alert(title, error.message || String(error));
+            const doSubmit = () => {
+                JobManager.submitJob(args)
+                    .then(() => {
+                        this.resetFormState(form, closeButton, generateButton, instructionsTextarea, true);
+                        if (retryTaskIdInput) {
+                            retryTaskIdInput.value = '';
+                        }
+                        document.dispatchEvent(new Event('newTaskAdded'));
+                    })
+                    .catch((error) => {
+                        this.resetFormState(form, closeButton, generateButton, instructionsTextarea, false);
+                        Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
+                            Notification.alert(title, error.message || String(error));
+                        });
                     });
-                });
+            };
+
+            // Retry: delete the failed task then create a new one with the form data.
+            const retryTaskId = retryTaskIdInput ? retryTaskIdInput.value.trim() : '';
+            if (retryTaskId) {
+                JobManager.removeTask(parseInt(retryTaskId, 10))
+                    .then(() => {
+                        if (retryTaskIdInput) {
+                            retryTaskIdInput.value = '';
+                        }
+                        doSubmit();
+                    })
+                    .catch((error) => {
+                        this.resetFormState(form, closeButton, generateButton, instructionsTextarea, false);
+                        Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
+                            Notification.alert(title, error.message || String(error));
+                        });
+                    });
+            } else {
+                doSubmit();
+            }
         },
 
         /**
          * Reset form to initial state after success or error.
          *
+         * On success: re-enables controls, clears instructions, closes modal.
+         * On error: re-enables controls only so the user can edit and retry without losing input.
+         *
          * @param {HTMLFormElement} form - The form element.
          * @param {Element} closeButton - The close button.
          * @param {Element} generateButton - The generate button.
          * @param {Element} textarea - The instructions textarea.
+         * @param {boolean} [closeModal=true] - If true, close the modal (success path); if false, keep modal open (error path).
          */
-        resetFormState: function(form, closeButton, generateButton, textarea) {
+        resetFormState: function(form, closeButton, generateButton, textarea, closeModal = true) {
             generateButton.disabled = false;
             textarea.readOnly = false;
-            textarea.value = '';
+            if (closeModal) {
+                textarea.value = '';
+            }
             isModalClosingDisabled = false;
 
             if (closeButton) {
                 closeButton.classList.remove('disabled');
                 closeButton.style.pointerEvents = 'auto';
-                const span = closeButton.querySelector('span');
-                if (span) {
-                    span.click();
+                if (closeModal) {
+                    const span = closeButton.querySelector('span');
+                    if (span) {
+                        span.click();
+                    }
                 }
             }
         },

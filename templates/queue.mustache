@@ -1,24 +1,28 @@
-<div class="queue-container d-flex flex-column" data-filter="{{activeFilter}}" style="height: 100%;">
-    <div class="queue-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom flex-shrink-0">
-        <span class="font-weight-bold">{{#str}}queuemodaltitle, block_dixeo_modulegen{{/str}}</span>
-        <button class="btn btn-sm btn-link queue-close-button" type="button" aria-label="{{#str}}close, moodle{{/str}}">
+{{!
+    Queue panel: header, loading state, task list. Rendered inside expanded container.
+
+    @template block_dixeo_modulegen/queue
+    @package    block_dixeo_modulegen
+}}
+<div class="queue-container d-flex flex-column h-100">
+    <div class="queue-header d-flex justify-content-between align-items-center border-bottom flex-shrink-0">
+        <span class="font-weight-bold mb-0">{{#str}}queuemodaltitle, block_dixeo_modulegen{{/str}}</span>
+        <button type="button" class="queue-close-button btn btn-sm btn-link p-0" aria-label="{{#str}}close, moodle{{/str}}">
             <i class="fa fa-chevron-down" aria-hidden="true"></i>
         </button>
     </div>
-    <div class="queue-loading d-flex justify-content-center align-items-center p-4" style="display: none; flex: 1;">
-        <div class="text-center">
-            <i class="fa fa-spinner fa-pulse fa-2x text-muted" aria-hidden="true"></i>
-            <div class="mt-2 text-muted">{{#str}}loading, moodle{{/str}}</div>
+    <div class="queue-loading d-none flex-grow-1 justify-content-center align-items-center p-4" aria-live="polite" aria-busy="false">
+        <div class="text-center text-muted">
+            <i class="fa fa-spinner fa-pulse fa-2x" aria-hidden="true"></i>
+            <p class="mt-2 mb-0">{{#str}}loading, moodle{{/str}}</p>
         </div>
     </div>
-    <div class="task-list m-3 flex-grow-1" style="overflow-y: auto;">
+    <div class="task-list list-group list-group-flush flex-grow-1 overflow-auto mx-0">
         {{#tasks}}
-            {{>block_dixeo_modulegen//task}}
+            {{> block_dixeo_modulegen/task}}
         {{/tasks}}
         {{^tasks}}
-            <div class="no-tasks">
-                {{#str}}notasksinthequeue, block_dixeo_modulegen{{/str}}
-            </div>
+            <p class="text-muted text-center queue-empty-msg mb-0">{{#str}}notasksinthequeue, block_dixeo_modulegen{{/str}}</p>
         {{/tasks}}
     </div>
 </div>

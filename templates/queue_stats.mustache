@@ -1,37 +1,19 @@
-<div class="row text-center stats-container">
-    <div class="col-4">
-        <div class="mx-auto d-flex align-items-center justify-content-center stat queued {{#stats.hasqueued}}active{{/stats.hasqueued}}" data-filter="queued">
-            <div>
-                <i class="fa fa-hourglass-start fa-2x" aria-hidden="true"></i>
-                {{#stats.hasqueued}}
-                    <div class="count">{{stats.queued}}</div>
-                {{/stats.hasqueued}}
-            </div>
-        </div>
-        <div class="mt-2 small text-muted">{{#str}} queued, block_dixeo_modulegen {{/str}}</div>
-    </div>
+{{!
+    Queue status bar: Active/Queued (spinner) + Needs attention (warning). Display only.
 
-    <div class="col-4">
-        <div class="mx-auto d-flex align-items-center justify-content-center stat processing {{#stats.hasprocessing}}active{{/stats.hasprocessing}}" data-filter="processing">
-            <div>
-                <i class="fa fa-spinner {{#stats.hasprocessing}}fa-pulse{{/stats.hasprocessing}} fa-2x" aria-hidden="true"></i>
-                {{#stats.hasprocessing}}
-                    <div class="count">{{stats.processing}}</div>
-                {{/stats.hasprocessing}}
-            </div>
-        </div>
-        <div class="mt-2 small text-muted">{{#str}} processing, block_dixeo_modulegen {{/str}}</div>
+    @template block_dixeo_modulegen/queue_stats
+    @package    block_dixeo_modulegen
+}}
+<div class="queue-status-bar d-flex align-items-center justify-content-between small">
+    <div class="stats-container d-flex align-items-center" role="group" aria-label="{{#str}}queuemodaltitle, block_dixeo_modulegen{{/str}}">
+        <span class="stat stat-active d-flex align-items-center" title="{{#str}}activequeued, block_dixeo_modulegen{{/str}}: {{#stats.active}}{{stats.active}}{{/stats.active}}{{^stats.active}}{{idle}}{{/stats.active}}">
+            <i class="fa fa-spinner mr-1" aria-hidden="true"></i>
+            <span class="count">{{#stats.active}}{{stats.active}}{{/stats.active}}{{^stats.active}}{{idle}}{{/stats.active}}</span>
+        </span>
+        <span class="stat stat-errors d-flex align-items-center" title="{{#str}}needsattention, block_dixeo_modulegen{{/str}}: {{stats.errors}}">
+            <i class="fa fa-exclamation-triangle mr-1" aria-hidden="true"></i>
+            <span class="count">{{stats.errors}}</span>
+        </span>
     </div>
-
-    <div class="col-4">
-        <div class="mx-auto d-flex align-items-center justify-content-center stat completed {{#stats.hascompleted}}active{{/stats.hascompleted}}" data-filter="completed">
-            <div>
-                <i class="fa fa-check-circle fa-2x" aria-hidden="true"></i>
-                {{#stats.hascompleted}}
-                    <div class="count">{{stats.completed}}</div>
-                {{/stats.hascompleted}}
-            </div>
-        </div>
-        <div class="mt-2 small text-muted">{{#str}} completed, block_dixeo_modulegen {{/str}}</div>
-    </div>
+    <div class="queue-status-bar-right" aria-hidden="true"></div>
 </div>

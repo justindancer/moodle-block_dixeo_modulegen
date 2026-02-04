@@ -14,7 +14,7 @@ $string['blocktitle'] = 'Añadir contenido generado por IA';
 $string['dixeo_modulegen:addinstance'] = 'Añadir un bloque Generador de Contenido Dixeo';
 $string['dixeo_modulegen:myaddinstance'] = 'Añadir un bloque Generador de Contenido Dixeo al panel de control';
 
-$string['aiactivities'] = 'Generar';
+$string['aiactivities'] = 'Generador de Contenido Dixeo';
 $string['notavailable'] = 'Este módulo no está disponible o no está configurado correctamente. Por favor, inténtelo de nuevo más tarde o contacte con su administrador.';
 
 $string['generate'] = 'Generar';
@@ -29,12 +29,16 @@ $string['success_message'] = 'Se ha añadido una nueva tarea de generación de c
 $string['generation_complete'] = '¡Su contenido ha sido generado con éxito! Actualice la página para verlo.';
 
 // Queue management.
+$string['opengeneratorqueue'] = 'Abrir cola del generador';
 $string['queue_processor'] = 'Procesador de Cola de Generación de Contenido Dixeo';
 $string['queuemodaltitle'] = 'Cola de Generación';
 $string['notasksinthequeue'] = 'La cola de tareas está actualmente vacía.';
 $string['queued'] = 'En cola';
 $string['processing'] = 'Procesando';
 $string['completed'] = 'Completado';
+$string['activequeued'] = 'Activos/En cola';
+$string['idle'] = 'Inactivo';
+$string['needsattention'] = 'Necesitan atención';
 $string['cancelled'] = 'Cancelado';
 $string['canceltask'] = 'Cancelar';
 $string['canceltaskconfirm'] = '¿Está seguro de que desea cancelar esta tarea? Esta acción no se puede deshacer.';
@@ -45,6 +49,16 @@ $string['generationqueued'] = 'Esperando en cola';
 $string['generationinprogress'] = 'Generación en progreso (<span class="elapsed-time">0:00</span>)';
 $string['generationfailed'] = 'Generación fallida';
 $string['generationcancelled'] = 'Generación cancelada';
+$string['generationerror'] = 'Error de generación';
+$string['next'] = 'Siguiente';
+$string['newmoduletype'] = 'Nuevo {$a}';
+$string['removefromqueue'] = 'Quitar de la cola';
+$string['removefromdisplay'] = 'Quitar de la vista';
+$string['completedon'] = 'Completado el {$a}';
+$string['viewinstructions'] = 'Ver instrucciones';
+$string['noinstructions'] = 'Sin instrucciones para esta tarea.';
+$string['retry'] = 'Reintentar';
+$string['retrygeneration'] = 'Reintentar generación';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'Pendiente';

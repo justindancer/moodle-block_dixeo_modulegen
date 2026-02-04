@@ -1,10 +1,80 @@
+/**
+ * block_dixeo_modulegen — Dixeo Module Generator block
+ *
+ * All visible colors go through CSS custom properties below. No hardcoded
+ * hex/rgb are used in rules; only in these variable definitions as fallbacks.
+ *
+ * Theme customization: any Moodle theme can restyle the block by redefining
+ * these variables (e.g. in its own CSS or in a parent selector):
+ *
+ *   .block_dixeo_modulegen {
+ *     --dixeo-modulegen-primary: var(--mytheme-primary);
+ *     --dixeo-modulegen-bg: var(--mytheme-surface);
+ *     --dixeo-modulegen-success: var(--mytheme-success);
+ *     ...
+ *   }
+ *
+ * When theme/edunao123 is present, --primary, --background, --border,
+ * --muted, --muted-foreground are used where noted; fallbacks apply otherwise.
+ *
+ * Structure:
+ *   1. Design tokens (CSS custom properties)
+ *   2. Block root & card
+ *   3. Status bar & footer
+ *   4. Queue (expanded panel, header, filters, task list)
+ *   5. Activity chooser (options, categories, drag-drop)
+ *   6. Generation modal (body bg: --dixeo-modulegen-modal-body-bg)
+ *   7. Context overrides (editing mode, course view)
+ *   8. Media queries
+ */
+
+/* ==========================================================================
+   1. DESIGN TOKENS (fallbacks only; themes override by redefining these)
+   ========================================================================== */
+
+.block_dixeo_modulegen {
+    /* Backgrounds (theme: --background, --muted) */
+    --dixeo-modulegen-bg: hsl(var(--background, 0 0% 100%));
+    --dixeo-modulegen-bg-muted: hsl(var(--muted, 210 40% 96.1%));
+    --dixeo-modulegen-bg-muted-hover: #e9ecef;
+    --dixeo-modulegen-bg-active: #f1f1f1;
+
+    /* Borders (theme: --border) */
+    --dixeo-modulegen-border: hsl(var(--border, 214.3 31.8% 91.4%));
+    --dixeo-modulegen-border-light: #e3e3e3;
+    --dixeo-modulegen-border-inactive: #dddddd;
+    --dixeo-modulegen-border-dark: #1d2125;
+
+    /* Text (theme: --muted-foreground) */
+    --dixeo-modulegen-text-muted: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+    --dixeo-modulegen-text: #495057;
+    --dixeo-modulegen-text-secondary: #575757;
+    --dixeo-modulegen-text-on-dark: white;
+
+    /* Brand & status (theme: --primary, --dixeo-blue; --destructive for errors) */
+    --dixeo-modulegen-primary: var(--primary, var(--dixeo-blue, #108df0));
+    --dixeo-modulegen-success: #347a33;
+    --dixeo-modulegen-error: hsl(var(--destructive, 0 63% 45%));
+
+    /* Shadows */
+    --dixeo-modulegen-shadow-sm: 0 -4px 6px rgba(0, 0, 0, 0.1);
+    --dixeo-modulegen-shadow-md: 4px 4px 10px rgba(0, 0, 0, 0.2);
+
+    /* Modal body background (solid; themes override for brand) */
+    --dixeo-modulegen-modal-body-bg: #eff6ff;
+}
+
+/* ==========================================================================
+   2. BLOCK ROOT & CARD
+   ========================================================================== */
+
 .block_dixeo_modulegen {
     margin-bottom: 0 !important;
     border-radius: 0;
 }
 
 .block_dixeo_modulegen .card {
-    border-radius: 0px;
+    border-radius: 0;
 }
 
 .block_dixeo_modulegen > .card-body {
@@ -17,169 +87,297 @@
 }
 
 .block_dixeo_modulegen .card-header {
-    color: var(--primary);
+    color: var(--dixeo-modulegen-primary);
 }
 
-.block_dixeo_modulegen .stats-container,
-.modal .stats-container {
-    overflow: hidden;
-    max-width: 440px;
-    margin: auto;
-
-    .stat {
-        width: 80px;
-        height: 80px;
-        border-radius: 8px;
-        background: #ffffff;
-        color: #dddddd;
-        border: 1px solid #dddddd;
-        cursor: pointer;
-
-        &.active {
-            color: #347a33;
-        }
-
-        .count {
-            background-color: #575757;
-            border-radius: 50%;
-            font-weight: bold;
-            color: white;
-            width: 20px;
-            height: 20px;
-            position: absolute;
-            top: 10px;
-            right: calc(50% - 30px);
-        }
-    }
-}
-
-/* Ensure the card has relative positioning for absolute children */
+/* Required for absolute positioning of expanded footer/queue */
 .block_dixeo_modulegen #dixeo-module-generator {
     position: relative;
-    /* Override theme rules that might affect positioning */
     overflow: visible !important;
 }
 
-/* Expanded footer styles - floats over content */
-.block_dixeo_modulegen .card-footer.queue-expanded {
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
-    background: #ffffff !important;
-    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1) !important;
-    border-top: 1px solid #dee2e6 !important;
-    /* Override theme display rules */
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Queue container that appears below expanded footer */
-.block_dixeo_modulegen .queue-container-expanded {
-    position: absolute !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    /* Bottom position will be set by JavaScript to footer height */
-    z-index: 998 !important;
-    background: #ffffff !important;
-    /* Fill available height from top to footer */
-    box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1) !important;
-    border-top: 1px solid #dee2e6 !important;
-    padding-top: 0 !important;
-    /* Initially hidden below (will slide up) */
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
-    /* Initially positioned below (translateY(100%)), will animate to translateY(0) */
-    transform: translateY(100%);
-    /* Override theme display rules */
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* When footer is expanded, show queue container below it */
-.block_dixeo_modulegen .card-footer.queue-expanded + .queue-container-expanded {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
-    display: block !important;
-    /* Animate up from below to visible position */
-    transform: translateY(0) !important;
-    margin-top: -1px;
-}
-
-/* Queue header with close button */
-.block_dixeo_modulegen .queue-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    cursor: pointer;
-    user-select: none;
-}
-
-.block_dixeo_modulegen .queue-header:hover {
-    background: #e9ecef;
-}
-
-.block_dixeo_modulegen .queue-close-button {
-    color: #6c757d;
-    padding: 0.25rem 0.5rem;
-    pointer-events: auto;
-}
-
-.block_dixeo_modulegen .queue-close-button:hover {
-    color: #495057;
-    text-decoration: none;
-}
-
-/* Active state for statistics */
-.block_dixeo_modulegen .stats-container .stat.active {
-    background-color: #f1f1f1 !important;
-    border-color: #347a33 !important;
-    border-width: 2px;
-}
-
-/* Ensure parent containers don't clip the expanded footer/queue */
 .block_dixeo_modulegen .card,
 .block_dixeo_modulegen > .card-body {
     overflow: visible !important;
 }
 
-/* Make footer cursor pointer to indicate it's clickable */
+/* ==========================================================================
+   3. STATUS BAR & FOOTER
+   ========================================================================== */
+
 .block_dixeo_modulegen .card-footer {
+    padding: 0 10px;
+    height: 32px;
     cursor: pointer;
 }
 
-/* Stats within footer should also be clickable but don't change cursor */
-.block_dixeo_modulegen .card-footer .stat {
+.block_dixeo_modulegen .queue-status-bar {
+    width: 100%;
+    min-height: 32px;
+}
+
+.block_dixeo_modulegen .queue-status-bar .stats-container {
+    overflow: hidden;
+    margin: 0;
+    max-width: none;
+    gap: 0.75rem;
+}
+
+.block_dixeo_modulegen .queue-status-bar .stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--dixeo-modulegen-text-muted);
+    font-size: 0.875rem;
+}
+
+.block_dixeo_modulegen .queue-status-bar .stat .count {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: inherit;
+}
+
+.block_dixeo_modulegen .fa-spinner {
+    color: var(--dixeo-modulegen-primary);
+}
+
+.block_dixeo_modulegen .queue-status-bar .stat-active,
+.block_dixeo_modulegen .queue-status-bar .stat-active .count {
+    color: var(--dixeo-modulegen-primary);
+}
+
+.block_dixeo_modulegen .queue-status-bar .stat-errors,
+.block_dixeo_modulegen .queue-status-bar .stat-errors .fa-exclamation-triangle {
+    color: var(--dixeo-modulegen-error);
+}
+
+.block_dixeo_modulegen .queue-status-bar-right {
+    min-width: 2rem;
+}
+
+/* ==========================================================================
+   4. QUEUE (expanded panel, header, filters, task list)
+   ========================================================================== */
+
+/* --- 4.1 Expanded footer & overlay --- */
+
+.block_dixeo_modulegen .card-footer.queue-expanded {
+    z-index: 1000 !important;
+    background: var(--dixeo-modulegen-bg) !important;
+    box-shadow: var(--dixeo-modulegen-shadow-sm) !important;
+    border-top: 1px solid var(--dixeo-modulegen-border) !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Bottom is set by JS to align with footer height */
+.block_dixeo_modulegen .queue-container-expanded {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 998 !important;
+    background: var(--dixeo-modulegen-bg) !important;
+    box-shadow: var(--dixeo-modulegen-shadow-sm) !important;
+    border-top: 1px solid var(--dixeo-modulegen-border) !important;
+    padding-top: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
+    transform: translateY(100%);
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+.block_dixeo_modulegen .card-footer.queue-expanded + .queue-container-expanded {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    margin-top: -1px;
+}
+
+/* --- 4.2 Queue header & close --- */
+
+.block_dixeo_modulegen .queue-header.cursor-pointer,
+.block_dixeo_modulegen .queue-header {
+    background: var(--dixeo-modulegen-bg-muted);
+    border-bottom: 1px solid var(--dixeo-modulegen-border);
     cursor: pointer;
+    user-select: none;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8125rem;
 }
 
-.block_dixeo_modulegen #module-generator-options {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 310px !important;
-    max-height: 360px !important;
+.block_dixeo_modulegen .queue-header:hover {
+    background: var(--dixeo-modulegen-bg-muted-hover);
 }
 
-.block_dixeo_modulegen #module-generator-options .optioninfo {
-    width: 32%;
-    display: inline-block;
-    transform: scale(0.9);
+.block_dixeo_modulegen .queue-close-button {
+    color: var(--dixeo-modulegen-text-muted);
+    padding: 0;
+    pointer-events: auto;
 }
 
-.block_dixeo_modulegen #module-generator-options a {
-    cursor: pointer;
-}
-
-.block_dixeo_modulegen #module-generator-options a.draggable {
-    cursor: grab;
-}
-
-.block_dixeo_modulegen #module-generator-options a:hover {
+.block_dixeo_modulegen .queue-close-button:focus,
+.block_dixeo_modulegen .queue-close-button:hover {
+    outline: none;
+    color: var(--dixeo-modulegen-text);
+    box-shadow: none;
     text-decoration: none;
+}
+
+/* --- 4.3 Queue task list --- */
+
+.queue-container .task-item,
+.queue-container-expanded .task-item {
+    display: none !important;
+}
+
+/* Status: 0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED, 4=CANCELLED - show all */
+.queue-container .task-item.status_0,
+.queue-container .task-item.status_1,
+.queue-container .task-item.status_2,
+.queue-container .task-item.status_3,
+.queue-container .task-item.status_4,
+.queue-container-expanded .task-item.status_0,
+.queue-container-expanded .task-item.status_1,
+.queue-container-expanded .task-item.status_2,
+.queue-container-expanded .task-item.status_3,
+.queue-container-expanded .task-item.status_4 {
+    display: flex !important;
+}
+
+.queue-container .task-item .task-actions,
+.queue-container-expanded .task-item .task-actions {
+    margin-left: 0.25rem;
+}
+
+.queue-container .task-item,
+.queue-container-expanded .task-item {
+    min-width: 0;
+}
+
+.task-list {
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+    min-width: 0;
+}
+
+.queue-empty-msg {
+    padding: 0.5rem !important;
+    font-size: 0.8125rem;
+}
+
+/* Queue task item: compact row. */
+.queue-container .task-item,
+.queue-container-expanded .task-item {
+    padding: 0.4rem 0.7rem !important;
+}
+
+/* Queue task icon: no background, vertically centered. */
+.task-list .task-item-icon {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.task-list .task-item-icon-img {
+    width: 35px;
+    height: 35px;
+    object-fit: contain;
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+.block_dixeo_modulegen .optionicon {
+    min-width: 52px;
+    color: var(--dixeo-modulegen-text-muted);
+    background-color: var(--dixeo-modulegen-bg-muted);
+}
+
+.block_dixeo_modulegen .optionicon img {
+    height: 30px;
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+/* Title: max 2 lines, crop with ellipsis; full title in tooltip (title attribute). */
+.task-list .task-details .task-title {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    margin-bottom: 0.2rem;
+    padding-right: 0.15rem;
+    overflow: hidden;
+    max-height: 2.6em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+    text-overflow: ellipsis;
+}
+
+.task-list .task-details .task-title a {
+    color: inherit;
+}
+
+.task-list .task-details .task-title a:hover {
+    text-decoration: underline;
+}
+
+.task-list .task-details {
+    padding: 0.25rem 0;
+}
+
+/* Task instructions info icon (before status). */
+.task-list .task-instructions-trigger-wrapper {
+    vertical-align: middle;
+}
+
+.task-list .task-instructions-icon {
+    font-size: 0.8rem;
+    color: var(--dixeo-modulegen-text-muted);
+    cursor: help;
+}
+
+.task-list .task-instructions-icon:hover {
+    color: var(--dixeo-modulegen-primary);
+}
+
+/* Instructions tooltip (shown on hover, created in JS). */
+.task-instructions-tooltip {
+    position: fixed;
+    z-index: 1060;
+    max-width: 320px;
+    max-height: 240px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--dixeo-modulegen-text);
+    background: var(--dixeo-modulegen-bg);
+    border: 1px solid var(--dixeo-modulegen-border);
+    border-radius: 4px;
+    box-shadow: var(--dixeo-modulegen-shadow-md);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    pointer-events: auto;
 }
 
 .block_dixeo_modulegen #module-generator-options a.disabled {
@@ -188,159 +386,216 @@
     opacity: 0.6;
 }
 
-.block_dixeo_modulegen #module-generator-options a.disabled * {
-    font-style: normal;
+/* Status: processing = green badge with elapsed time (fixed width to avoid jump on tick). */
+.task-list .task-status-processing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.2rem 0.4rem;
+    margin-top: 0.15rem;
+    min-width: 10em;
+    box-sizing: border-box;
+    background-color: var(--dixeo-modulegen-success);
+    color: white;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: default;
+    user-select: none;
+}
+
+.task-list .task-status-processing .elapsed-time {
+    min-width: 2.8em;
+    display: inline-block;
+    text-align: right;
+}
+
+.task-list .task-status-queued,
+.task-list .task-status-next,
+.task-list .task-status-error,
+.task-list .task-status-cancelled,
+.task-list .task-status-completed {
+    display: block;
+    margin-top: 0.15rem;
+    padding-right: 0.15rem;
+    font-size: 0.75rem;
+    cursor: default;
+    user-select: none;
+}
+
+/* Failed status: separator and retry link alignment + emphasis */
+.task-list .task-status-inline {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.task-list .task-status-sep {
+    width: 1px;
+    height: 1em;
+    margin: 0 0.5rem;
+    background: currentColor;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+.task-list .task-retry-link {
+    font-weight: 600;
+}
+
+/* Remove button: visible on row hover (gray), red on icon hover. */
+.task-list .task-remove-button {
+    color: var(--dixeo-modulegen-text-muted);
+    font-size: 0.9rem;
+    line-height: 1;
+    border: none;
+    background: none;
+    cursor: pointer;
+    opacity: 0;
+    padding: 0.15rem;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.task-list .task-item:hover .task-remove-button,
+.task-list .task-remove-button:hover,
+.task-list .task-remove-button:focus {
+    opacity: 0.85;
+}
+
+.task-list .task-remove-button:hover,
+.task-list .task-remove-button:focus {
+    color: var(--dixeo-modulegen-error) !important;
+    opacity: 1;
+}
+
+.task-list .task-remove-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- 4.4 Modal stats (large layout when used in modal) --- */
+
+.modal .stats-container .stat.active {
+    background-color: var(--dixeo-modulegen-bg-active) !important;
+    border-width: 2px;
+    border-color: var(--dixeo-modulegen-success) !important;
+}
+
+/* ==========================================================================
+   5. ACTIVITY CHOOSER (options, categories)
+   ========================================================================== */
+
+.block_dixeo_modulegen #module-generator-options {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 310px !important;
+    max-height: 360px !important;
 }
 
 .block_dixeo_modulegen #module-generator-options .optionname {
-    color: #575757;
+    color: var(--dixeo-modulegen-text-secondary);
 }
 
-.task-list .activityiconcontainer img ,
-.block_dixeo_modulegen .optionicon img {
-    filter: brightness(0) invert(1);
-    user-drag: none;
-    -webkit-user-drag: none;
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    height: 30px;
+.block_dixeo_modulegen #module-generator-options a {
+    cursor: pointer;
 }
 
-.task-list {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 15px;
-
-    .activityiconcontainer {
-        min-width: 52px;
-    }
-
-    .task-title {
-        font-weight: bold;
-    }
-
-    .task-details h5 {
-        font-size: 16px;
-        margin-bottom: 2px;
-    }
-
-    /* Hide queued/progress indicators by default, show timestamp */
-    .task-item .task-queued,
-    .task-item .task-progress,
-    .task-item.status_0 .task-timestamp,
-    .task-item.status_1 .task-timestamp {
-        display: none;
-    }
-
-    /* Show queued indicator for pending (0), progress for processing (1) */
-    .task-item.status_0 .task-queued,
-    .task-item.status_1 .task-progress {
-        display: block;
-    }
-
-    .task-timestamp {
-        max-width: 450px;
-        word-wrap: break-word;
-        max-height: 56px;
-        overflow: hidden;
-    }
+.block_dixeo_modulegen #module-generator-options a:hover {
+    text-decoration: none;
 }
 
-.queue-container[data-filter="queued"] .stat.queued,
-.queue-container[data-filter="processing"] .stat.processing,
-.queue-container[data-filter="completed"] .stat.completed,
-.queue-container-expanded[data-filter="queued"] .stat.queued,
-.queue-container-expanded[data-filter="processing"] .stat.processing,
-.queue-container-expanded[data-filter="completed"] .stat.completed {
-    background-color: #f1f1f1;
+.block_dixeo_modulegen #module-generator-options a.draggable {
+    cursor: grab;
 }
 
-.queue-container .task-item,
-.queue-container-expanded .task-item {
-    display: none !important;
+.block_dixeo_modulegen #module-generator-options a.draggable:focus {
+    box-shadow: none;
 }
-
-/* Filter visibility based on new status values:
-   0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED, 4=CANCELLED */
-.queue-container[data-filter="all"] .task-item,
-.queue-container[data-filter="queued"] .task-item.status_0,
-.queue-container[data-filter="processing"] .task-item.status_1,
-.queue-container[data-filter="completed"] .task-item.status_2,
-.queue-container[data-filter="completed"] .task-item.status_3,
-.queue-container[data-filter="completed"] .task-item.status_4,
-.queue-container-expanded[data-filter="all"] .task-item,
-.queue-container-expanded[data-filter="queued"] .task-item.status_0,
-.queue-container-expanded[data-filter="processing"] .task-item.status_1,
-.queue-container-expanded[data-filter="completed"] .task-item.status_2,
-.queue-container-expanded[data-filter="completed"] .task-item.status_3,
-.queue-container-expanded[data-filter="completed"] .task-item.status_4 {
-    display: flex !important;
-}
-
 
 .block_dixeo_modulegen .optionscontainer > div {
     margin-bottom: 30px;
 }
 
-.block_dixeo_modulegen .optionscontainer .dixeo-collapsed {
-    margin: 0;
-}
-
-.block_dixeo_modulegen #module-generator-options .dixeo-collapsed .optioninfo {
+.block_dixeo_modulegen .category.dixeo-collapsed .category-items {
     display: none;
 }
 
-.block_dixeo_modulegen #module-generator-options .dixeo-collapsed .dixeo-module-generator-toggle {
-    transform: rotate(90deg);
+.block_dixeo_modulegen .collapse-icon-toggle {
+    min-width: 1.25rem;
+}
+.block_dixeo_modulegen .category.dixeo-collapsed .icon-expand {
+    display: inline !important;
+}
+.block_dixeo_modulegen .category.dixeo-collapsed .icon-collapse {
+    display: none !important;
+}
+
+.block_dixeo_modulegen .optionscontainer > .category {
+    margin-bottom: 0;
 }
 
 .block_dixeo_modulegen .optionscontainer .subcategory {
-    color: #575757;
-    margin-bottom: 10px;
+    color: var(--dixeo-modulegen-text-secondary);
     font-weight: 600;
-    border-bottom: 1px solid #e3e3e3;
-    padding: 10px;
 }
 
-.course-content .dd-drop-down {
-    border-bottom: 1px solid #1d2125;
-    margin-bottom: -1px;
+.block_dixeo_modulegen .optionscontainer .subcategory:focus,
+.block_dixeo_modulegen .optionscontainer .subcategory:hover {
+    outline: none;
+    box-shadow: none;
+    text-decoration: none;
+}
+
+.block_dixeo_modulegen #module-generator-options a.disabled,
+.block_dixeo_modulegen #module-generator-options span.disabled {
+    filter: grayscale(100%);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   6. GENERATION MODAL
+   ========================================================================== */
+
+/* Modal is moved to body by JS, so it needs its own tokens (theme fallbacks). */
+#generationModal {
+    --dixeo-modulegen-bg: hsl(var(--background, 0 0% 100%));
+    --dixeo-modulegen-bg-muted: hsl(var(--muted, 210 40% 96.1%));
+    --dixeo-modulegen-bg-muted-hover: #e9ecef;
+    --dixeo-modulegen-bg-active: #f1f1f1;
+    --dixeo-modulegen-border: hsl(var(--border, 214.3 31.8% 91.4%));
+    --dixeo-modulegen-border-light: #e3e3e3;
+    --dixeo-modulegen-border-inactive: #dddddd;
+    --dixeo-modulegen-border-dark: #1d2125;
+    --dixeo-modulegen-text-muted: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+    --dixeo-modulegen-text: #495057;
+    --dixeo-modulegen-text-secondary: #575757;
+    --dixeo-modulegen-text-on-dark: white;
+    --dixeo-modulegen-primary: var(--primary, var(--dixeo-blue, #108df0));
+    --dixeo-modulegen-success: #347a33;
+    --dixeo-modulegen-shadow-sm: 0 -4px 6px rgba(0, 0, 0, 0.1);
+    --dixeo-modulegen-shadow-md: 4px 4px 10px rgba(0, 0, 0, 0.2);
+    --dixeo-modulegen-modal-body-bg: #eff6ff;
 }
 
 #generationModal #instructions {
     font-size: 16px;
-}
-
-/* Edit mode styles */
-.editing .block_dixeo_modulegen > .card-body > .card-text {
-    display: block;
-    margin-top: 25px !important;
-}
-
-
-
-/* Generation modal */
-#generationModal #prompt-form textarea {
-    border: none;
-    padding: 20px;
-    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
-    min-height: 90px;
-}
-
-#generationModal #instructions {
     overflow-y: hidden;
     min-height: 60px;
     max-height: 200px;
 }
 
+#generationModal #prompt-form textarea {
+    border: none;
+    padding: 20px;
+    min-height: 90px;
+    box-shadow: var(--dixeo-modulegen-shadow-md);
+}
+
 #generationModal #generate_button {
     right: 3%;
     height: 35px;
-    background-color: #108df0;
-    font-weight: 700;
     padding: 5px 10px;
+    font-weight: 700;
+    background-color: var(--dixeo-modulegen-primary);
 }
 
 #generationModal #generate_button:focus,
@@ -350,21 +605,8 @@
 
 #generationModal #generate_button img {
     position: relative;
-    margin-right: 5px;
-}
-
-#generationModal .p64 {
-    padding: 15px 0px 25px 0;
-}
-
-@media (max-width: 790px) {
-    #generationModal .p64 {
-        padding: 15px 0px 40px 0;
-    }
-}
-
-#generationModal .modal-dialog {
-    transform: translate(0, 50%);
+    display: inline-block;
+    margin: 0 0 3px 0;
 }
 
 #generationModal .modal-content {
@@ -378,18 +620,41 @@
 #generationModal .modal-title {
     width: 100%;
     font-size: 30px;
-    color: var(--primary);
+    color: var(--primary, var(--dixeo-blue, #108df0));
 }
 
 #generationModal .modal-body {
     padding: 50px;
-    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
-    --tw-gradient-from: #eff6ff var(--tw-gradient-from-position);
-    --tw-gradient-to: rgb(239 246 255 / 0) var(--tw-gradient-to-position);
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
-    --tw-gradient-stops: var(--tw-gradient-from), #fff var(--tw-gradient-via-position), var(--tw-gradient-to);
-    --tw-gradient-to: #faf5ff var(--tw-gradient-to-position);
+    background-color: var(--dixeo-modulegen-modal-body-bg);
+}
+
+#generationModal .p64 {
+    padding: 15px 0 25px 0;
+}
+
+/* ==========================================================================
+   7. CONTEXT OVERRIDES
+   ========================================================================== */
+
+/* Drag-drop target in course view (outside block) */
+.course-content .dd-drop-down {
+    border-bottom: 1px solid var(--dixeo-modulegen-border-dark);
+    margin-bottom: -1px;
+}
+
+.editing .block_dixeo_modulegen > .card-body > .card-text {
+    display: block;
+    margin-top: 25px !important;
+}
+
+/* ==========================================================================
+   8. MEDIA QUERIES
+   ========================================================================== */
+
+@media (max-width: 790px) {
+    #generationModal .p64 {
+        padding: 15px 0 40px 0;
+    }
 }
 
 @media (min-width: 576px) {

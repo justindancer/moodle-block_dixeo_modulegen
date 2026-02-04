@@ -53,10 +53,31 @@ class queue_presenter {
             ]))->out(false);
         }
 
-        // Get the actual module title using Moodle's optimized course info API.
-        $task->title = self::get_module_title($task);
+        // Resolve title: prefer DB title when set; for completed tasks with cmid use live module name from Moodle.
+        $dbtitle = isset($task->title) ? trim((string) $task->title) : '';
+        $moduleTitle = self::get_module_title($task);
+        if ($moduleTitle !== '') {
+            $task->title = $moduleTitle;
+        } elseif ($dbtitle !== '') {
+            $task->title = $dbtitle;
+        }
 
-        // Status label for display.
+        // Display title: use resolved or DB title when available, otherwise "New {MODULETYPE}".
+        $task->display_title = $task->title !== ''
+            ? $task->title
+            : get_string('newmoduletype', 'block_dixeo_modulegen', get_string('modulename', 'mod_' . $modulename));
+
+        // Short completion date for completed tasks (e.g. "Completed on 19 Jan 2026, 14:25").
+        $task->completed_on_short = '';
+        if ((int) $task->status === queue_status::STATUS_COMPLETED && $task->timecompleted > 0) {
+            $task->completed_on_short = get_string(
+                'completedon',
+                'block_dixeo_modulegen',
+                userdate($task->timecompleted, get_string('strftimedatetimeshort', 'langconfig'))
+            );
+        }
+
+        // Status label for display (task->status may be string from DB; get_string key is numeric).
         $task->statuslabel = get_string('status_' . $task->status, 'block_dixeo_modulegen');
 
         // Select appropriate timestamp for display.
@@ -134,32 +155,35 @@ class queue_presenter {
     /**
      * Calculate queue statistics from status counts.
      *
+     * Returns active (queued + processing) and errors (failed + cancelled).
+     *
      * @param array $statusCounts Array of records with status and count fields.
-     * @return array Statistics with queued, processing, completed counts.
+     * @return array Statistics with active and errors counts.
      */
     public static function calculate_statistics(array $statusCounts): array {
-        $stats = [
-            'queued' => 0,
-            'processing' => 0,
-            'completed' => 0,
-        ];
+        $active = 0;
+        $errors = 0;
 
         foreach ($statusCounts as $record) {
-            switch ((int) $record->status) {
+            $status = (int) $record->status;
+            $count = (int) $record->count;
+            switch ($status) {
                 case queue_status::STATUS_PENDING:
-                    $stats['queued'] += $record->count;
-                    break;
                 case queue_status::STATUS_PROCESSING:
-                    $stats['processing'] += $record->count;
+                    $active += $count;
                     break;
-                case queue_status::STATUS_COMPLETED:
                 case queue_status::STATUS_FAILED:
                 case queue_status::STATUS_CANCELLED:
-                    $stats['completed'] += $record->count;
+                    $errors += $count;
+                    break;
+                case queue_status::STATUS_COMPLETED:
                     break;
             }
         }
 
-        return $stats;
+        return [
+            'active' => $active,
+            'errors' => $errors,
+        ];
     }
 }

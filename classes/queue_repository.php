@@ -45,7 +45,8 @@ class queue_repository {
     }
 
     /**
-     * Get all tasks for a course ordered by creation time.
+     * Get all tasks for a course in reverse queue order (newest first, oldest last).
+     * Includes all statuses: queued, processing, completed, failed, cancelled.
      *
      * @param int $courseid The course ID.
      * @return array Array of task records.
@@ -53,7 +54,7 @@ class queue_repository {
     public static function get_all_by_course(int $courseid): array {
         global $DB;
 
-        $records = $DB->get_records(self::TABLE, ['courseid' => $courseid], 'timecreated ASC');
+        $records = $DB->get_records(self::TABLE, ['courseid' => $courseid], 'timecreated DESC');
         return $records ?: [];
     }
 
@@ -144,7 +145,21 @@ class queue_repository {
     }
 
     /**
+     * Delete a task record.
+     *
+     * @param int $id The task ID.
+     * @return bool True on success.
+     */
+    public static function delete(int $id): bool {
+        global $DB;
+
+        return $DB->delete_records(self::TABLE, ['id' => $id]);
+    }
+
+    /**
      * Create base record structure for queue entries.
+     *
+     * Caller must set status and optionally jobid/timestarted before insert.
      *
      * @param int $courseid The course ID.
      * @param string $modulename The module type.

@@ -48,6 +48,9 @@ class api extends external_api {
     /**
      * Validate course access and capabilities.
      *
+     * Ensures the user is logged into the course and has manageactivities capability.
+     * Sets PAGE context for security and correct output during the request.
+     *
      * @param int $courseid The course ID.
      * @return \context_course The course context.
      * @throws \required_capability_exception If user lacks capability.
@@ -257,6 +260,8 @@ class api extends external_api {
             'sectionnumber' => new external_value(PARAM_INT, 'Section number', VALUE_OPTIONAL),
             'beforemod' => new external_value(PARAM_INT, 'Insert before module', VALUE_OPTIONAL),
             'link' => new external_value(PARAM_URL, 'Link to created module', VALUE_OPTIONAL),
+            'display_title' => new external_value(PARAM_TEXT, 'Display title (New MODULETYPE or activity title)', VALUE_OPTIONAL),
+            'completed_on_short' => new external_value(PARAM_TEXT, 'Short completion date for completed tasks', VALUE_OPTIONAL),
             'timestamp' => new external_value(PARAM_TEXT, 'Display timestamp', VALUE_OPTIONAL),
             'timecreated' => new external_value(PARAM_INT, 'Creation time', VALUE_OPTIONAL),
             'timestarted' => new external_value(PARAM_INT, 'Start time', VALUE_OPTIONAL),
@@ -269,9 +274,8 @@ class api extends external_api {
         ], 'Task record');
 
         $stats = new external_single_structure([
-            'queued' => new external_value(PARAM_INT, 'Pending tasks count'),
-            'processing' => new external_value(PARAM_INT, 'Processing tasks count'),
-            'completed' => new external_value(PARAM_INT, 'Completed tasks count'),
+            'active' => new external_value(PARAM_INT, 'Active/queued tasks count (pending + processing)'),
+            'errors' => new external_value(PARAM_INT, 'Tasks needing attention (failed + cancelled)'),
         ]);
 
         return new external_single_structure([
@@ -385,6 +389,59 @@ class api extends external_api {
                 'sectionnumber' => new external_value(PARAM_INT, 'Section number', VALUE_OPTIONAL),
                 'beforemod' => new external_value(PARAM_INT, 'Insert before module', VALUE_OPTIONAL),
             ], 'Next task that was started', VALUE_OPTIONAL),
+        ]);
+    }
+
+    // =========================================================================
+    // delete_task - Remove a task from the queue (database)
+    // =========================================================================
+
+    /**
+     * Parameters for delete_task.
+     *
+     * @return external_function_parameters
+     */
+    public static function delete_task_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'queue_id' => new external_value(PARAM_INT, 'Queue record ID'),
+        ]);
+    }
+
+    /**
+     * Delete a task. Allowed for queued, completed, failed, cancelled. Not for processing.
+     *
+     * @param int $queueid The queue record ID.
+     * @return array Result with success and message.
+     */
+    public static function delete_task(int $queueid): array {
+        $params = self::validate_parameters(self::delete_task_parameters(), [
+            'queue_id' => $queueid,
+        ]);
+
+        $task = queue_repository::get_by_id($params['queue_id']);
+        if (!$task) {
+            return ['success' => false, 'message' => 'Task not found'];
+        }
+
+        self::validate_course_access($task->courseid);
+
+        $success = queue_service::delete($params['queue_id']);
+
+        return [
+            'success' => $success,
+            'message' => $success ? 'Task removed' : 'Cannot remove this task',
+        ];
+    }
+
+    /**
+     * Return values for delete_task.
+     *
+     * @return external_single_structure
+     */
+    public static function delete_task_returns(): external_single_structure {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Whether delete succeeded'),
+            'message' => new external_value(PARAM_TEXT, 'Result message'),
         ]);
     }
 }

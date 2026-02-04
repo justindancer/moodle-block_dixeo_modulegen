@@ -1,9 +1,11 @@
-<div id="dixeo-module-generator" class="card border-0 d-flex flex-column">
-    <div class="card-header d-flex justify-content-between align-items-center bg-light px-3 py-2" onclick="this.parentElement.classList.toggle('dixeo-collapsed');">
-        <span class="font-weight-bold dixeo-module-generator-title">{{#str}}aiactivities, block_dixeo_modulegen{{/str}}</span>
-        <span class="dixeo-module-generator-toggle">
-            <i class="fa fa-chevron-down"></i>
-        </span>
+{{!
+    Block card shell. Content (activity chooser + footer) is injected by JS.
+
+    @template block_dixeo_modulegen/card
+    @package    block_dixeo_modulegen
+}}
+<div id="dixeo-module-generator" class="card border-0 d-flex flex-column" role="region" aria-label="{{#str}}aiactivities, block_dixeo_modulegen{{/str}}">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center px-3 py-2">
+        <span class="font-weight-bold">{{#str}}aiactivities, block_dixeo_modulegen{{/str}}</span>
     </div>
-    <!-- Content will be appended here -->
 </div>

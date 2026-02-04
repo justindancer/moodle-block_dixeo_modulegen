@@ -170,6 +170,26 @@ class queue_service {
     }
 
     /**
+     * Delete a task from the queue (remove from queue or remove from display).
+     * Allowed for PENDING, COMPLETED, FAILED, CANCELLED. Not allowed for PROCESSING.
+     *
+     * @param int $queueid The queue record ID.
+     * @return bool True if deleted, false if task not found or status not allowed.
+     */
+    public static function delete(int $queueid): bool {
+        $task = queue_repository::get_by_id($queueid);
+        if (!$task) {
+            return false;
+        }
+
+        if ((int) $task->status === queue_status::STATUS_PROCESSING) {
+            return false;
+        }
+
+        return queue_repository::delete($queueid);
+    }
+
+    /**
      * Check if a course has an active (PROCESSING) job.
      *
      * @param int $courseid The course ID.

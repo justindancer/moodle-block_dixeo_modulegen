@@ -1,8 +1,13 @@
-<!-- AI Generation modal -->
-<div class="modal fade" id="generationModal" tabindex="-1" role="dialog" aria-labelledby="generationModalLabel">
-    <div class="modal-dialog" role="document">
+{{!
+    Generation modal shell. Content from prompt template.
+
+    @template block_dixeo_modulegen/modal
+    @package    block_dixeo_modulegen
+}}
+<div class="modal fade" id="generationModal" tabindex="-1" role="dialog" aria-labelledby="generationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            {{> block_dixeo_modulegen/prompt }}
+            {{> block_dixeo_modulegen/prompt}}
         </div>
     </div>
 </div>

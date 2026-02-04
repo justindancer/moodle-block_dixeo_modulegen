@@ -24,11 +24,9 @@ define([
     'jquery',
     'core/str',
     'core/templates',
-    'core/modal_save_cancel',
-    'core/modal_events',
     'core/notification',
     'block_dixeo_modulegen/job_manager'
-], function($, Str, Templates, ModalSaveCancel, ModalEvents, Notification, JobManager) {
+], function($, Str, Templates, Notification, JobManager) {
     'use strict';
 
     return {
@@ -52,9 +50,6 @@ define([
 
         /** @var {Object|null} stats - Current queue statistics. */
         stats: null,
-
-        /** @var {string} activeFilter - Current task filter ('all', 'queued', 'processing', 'completed'). */
-        activeFilter: 'all',
 
         /** @var {Object|null} boundHandlers - Stored event handlers for cleanup. */
         boundHandlers: null,
@@ -95,13 +90,7 @@ define([
 
             // Create bound handlers so we can remove them later.
             this.boundHandlers = {
-                footerClick: (event) => {
-                    // Don't toggle if clicking on a stat element (stats have their own handler).
-                    if (!event.target.closest('.stat')) {
-                        this.toggleQueueExpansion();
-                    }
-                },
-                statClick: (event) => this.handleStatClick(event),
+                footerClick: () => this.toggleQueueExpansion(),
                 queueCloseClick: () => this.collapseQueue(),
                 queueDataUpdate: (event) => this.handleQueueData(event),
                 triggerRefresh: () => this.updateQueueStatistics(),
@@ -111,8 +100,12 @@ define([
 
             if (this.blockFooter) {
                 this.blockFooter.addEventListener('click', this.boundHandlers.footerClick);
-                // Add click handler for stats.
-                this.blockFooter.addEventListener('click', this.boundHandlers.statClick);
+                // Tooltip for the status bar.
+                Str.get_string('opengeneratorqueue', 'block_dixeo_modulegen').then((s) => {
+                    if (this.blockFooter) {
+                        this.blockFooter.setAttribute('title', s);
+                    }
+                });
                 // Initial fetch on page load.
                 this.updateQueueStatistics();
             }
@@ -148,7 +141,6 @@ define([
             if (this.boundHandlers) {
                 if (this.blockFooter) {
                     this.blockFooter.removeEventListener('click', this.boundHandlers.footerClick);
-                    this.blockFooter.removeEventListener('click', this.boundHandlers.statClick);
                 }
                 if (this.queueContainer) {
                     const queueHeader = this.queueContainer.querySelector('.queue-header');
@@ -213,20 +205,13 @@ define([
                 // Insert the queue container right before the footer as a sibling.
                 this.queueContainer = document.createElement('div');
                 this.queueContainer.className = 'queue-container-expanded';
-                this.queueContainer.setAttribute('data-filter', this.activeFilter);
 
-                // Insert afbeforeter the footer.
-                if (this.blockFooter) {
-                    this.blockFooter.parentNode.insertBefore(this.queueContainer, this.blockFooter);
-                } else {
-                    this.blockFooter.parentNode.appendChild(this.queueContainer);
-                }
+                this.blockFooter.parentNode.insertBefore(this.queueContainer, this.blockFooter);
 
-                // Add close handlers for header and button.
                 const queueHeader = this.queueContainer.querySelector('.queue-header');
                 if (queueHeader) {
                     queueHeader.addEventListener('click', this.boundHandlers.queueCloseClick);
-                    queueHeader.style.cursor = 'pointer';
+                    queueHeader.classList.add('cursor-pointer');
                 }
                 const closeButton = this.queueContainer.querySelector('.queue-close-button');
                 if (closeButton) {
@@ -321,80 +306,20 @@ define([
         },
 
         /**
-         * Handle click on footer statistics.
-         *
-         * @param {Event} event - The click event.
-         */
-        handleStatClick: async function(event) {
-            const stat = event.target.closest('.stats-container .stat');
-            if (!stat) {
-                return;
-            }
-
-            event.stopPropagation();
-
-            let filter = stat.getAttribute('data-filter') || '';
-            if (this.activeFilter === filter || filter === '') {
-                filter = 'all';
-            }
-
-            this.activeFilter = filter;
-
-            // If queue is collapsed, expand it.
-            if (!this.isExpanded) {
-                await this.expandQueue();
-            }
-
-            // Update the filter (whether just expanded or already expanded).
-            if (this.queueContainer) {
-                this.queueContainer.setAttribute('data-filter', filter);
-                // Also update inner queue-container for CSS filtering.
-                const innerQueueContainer = this.queueContainer.querySelector('.queue-container');
-                if (innerQueueContainer) {
-                    innerQueueContainer.setAttribute('data-filter', filter);
-                }
-            }
-
-            // Update active state in footer.
-            this.updateStatsActiveState();
-        },
-
-        /**
-         * Update the active state of statistics in the footer.
-         */
-        updateStatsActiveState: function() {
-            if (!this.blockFooter) {
-                return;
-            }
-
-            const stats = this.blockFooter.querySelectorAll('.stat');
-            stats.forEach(stat => {
-                const filter = stat.getAttribute('data-filter') || '';
-                if (this.activeFilter === filter && filter !== '') {
-                    stat.classList.add('active');
-                } else if (this.activeFilter === 'all' || filter === '') {
-                    stat.classList.remove('active');
-                } else {
-                    stat.classList.remove('active');
-                }
-            });
-        },
-
-        /**
          * Show loading state in queue container.
          */
         showQueueLoading: function() {
             if (!this.queueContainer) {
                 return;
             }
-
             const loadingDiv = this.queueContainer.querySelector('.queue-loading');
             const taskList = this.queueContainer.querySelector('.task-list');
             if (loadingDiv) {
-                loadingDiv.style.display = 'flex';
+                loadingDiv.classList.remove('d-none');
+                loadingDiv.classList.add('d-flex');
             }
             if (taskList) {
-                taskList.style.display = 'none';
+                taskList.classList.add('d-none');
             }
         },
 
@@ -405,18 +330,14 @@ define([
             if (!this.queueContainer) {
                 return;
             }
-
             const loadingDiv = this.queueContainer.querySelector('.queue-loading');
             const taskList = this.queueContainer.querySelector('.task-list');
             if (loadingDiv) {
-                loadingDiv.style.display = 'none';
+                loadingDiv.classList.add('d-none');
+                loadingDiv.classList.remove('d-flex');
             }
             if (taskList) {
-                taskList.style.display = 'block';
-            }
-            // Ensure loading is definitely hidden.
-            if (loadingDiv) {
-                loadingDiv.setAttribute('style', 'display: none !important;');
+                taskList.classList.remove('d-none');
             }
         },
 
@@ -444,12 +365,32 @@ define([
                         await this.enrichTaskForDisplay(task);
                         context.tasks.push(task);
                     }
+                    // Mark the "Next" task (show "Next" instead of "Queued"): either the queued task
+                    // immediately after the one in progress, or (if none processing) the oldest queued (last in list).
+                    const nextStr = await Str.get_string('next', 'block_dixeo_modulegen');
+                    let nextMarked = false;
+                    for (let i = 0; i < context.tasks.length - 1; i++) {
+                        if (parseInt(context.tasks[i].status, 10) === 1 && parseInt(context.tasks[i + 1].status, 10) === 0) {
+                            context.tasks[i + 1].isnext = true;
+                            context.tasks[i + 1].statusdisplay = nextStr;
+                            nextMarked = true;
+                            break;
+                        }
+                    }
+                    if (!nextMarked) {
+                        // No task is processing; the next in line is the oldest queued (last in list, list is newest first).
+                        for (let j = context.tasks.length - 1; j >= 0; j--) {
+                            if (parseInt(context.tasks[j].status, 10) === 0) {
+                                context.tasks[j].isnext = true;
+                                context.tasks[j].statusdisplay = nextStr;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 // Note: We don't update stats here - they're already updated in renderQueueStatistics
                 // to avoid duplication. The stats in the footer are the single source of truth.
-
-                context.activeFilter = this.activeFilter;
 
                 // Track scroll position if container already has content.
                 let scrollPosition = 0;
@@ -467,12 +408,6 @@ define([
 
                 const html = await Templates.render('block_dixeo_modulegen/queue', context);
                 this.queueContainer.innerHTML = html;
-                // Set filter on both outer container and inner queue-container.
-                this.queueContainer.setAttribute('data-filter', this.activeFilter);
-                const innerQueueContainer = this.queueContainer.querySelector('.queue-container');
-                if (innerQueueContainer) {
-                    innerQueueContainer.setAttribute('data-filter', this.activeFilter);
-                }
 
                 // Hide loading after rendering content.
                 this.hideQueueLoading();
@@ -481,7 +416,7 @@ define([
                 const queueHeader = this.queueContainer.querySelector('.queue-header');
                 if (queueHeader) {
                     queueHeader.addEventListener('click', this.boundHandlers.queueCloseClick);
-                    queueHeader.style.cursor = 'pointer';
+                    queueHeader.classList.add('cursor-pointer');
                 }
                 const closeButton = this.queueContainer.querySelector('.queue-close-button');
                 if (closeButton) {
@@ -515,7 +450,6 @@ define([
                     }, 1);
                 }
 
-                this.addFilteringListeners();
                 this.addActionListeners();
 
             }).catch(async (error) => {
@@ -533,77 +467,197 @@ define([
             // Add module display info.
             task.displayname = '';
             task.iconurl = '';
-            task.backgroundColor = '';
             task.options = {beta: false};
 
             if (this.modules[task.modulename]) {
                 const mod = this.modules[task.modulename];
                 task.displayname = mod.displayname;
                 task.iconurl = mod.iconurl;
-                task.backgroundColor = mod.backgroundColor;
                 task.options.beta = mod.options?.beta || false;
             }
 
-            const status = parseInt(task.status);
+            const status = parseInt(task.status, 10);
 
-            // Status display strings.
-            // 0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED, 4=CANCELLED
-            if (status === 0) {
-                task.generationstatus = await Str.get_string('generationqueued', 'block_dixeo_modulegen');
-            } else if (status === 1) {
-                task.generationstatus = await Str.get_string('generationinprogress', 'block_dixeo_modulegen');
-            } else if (status === 3) {
-                task.generationstatus = await Str.get_string('generationfailed', 'block_dixeo_modulegen');
-                const params = task.params ? JSON.parse(task.params) : {};
-                task.timestamp = params.error || '';
-                task.isfailed = true;
-            } else if (status === 4) {
-                task.generationstatus = await Str.get_string('generationcancelled', 'block_dixeo_modulegen');
-                task.isfailed = true;
-            }
-
-            // Only PENDING tasks can be cancelled (not PROCESSING).
             task.isqueued = (status === 0);
+            task.isprocessing = (status === 1);
             task.iscompleted = (status === 2);
-            task.isfailed = task.isfailed || false;
+            task.isfailed = (status === 3);
+            task.iscancelled = (status === 4);
+            task.isnext = false;
+
+            // Status display text for template.
+            if (status === 0) {
+                task.statusdisplay = await Str.get_string('queued', 'block_dixeo_modulegen');
+            } else if (status === 3) {
+                task.statusdisplay = await Str.get_string('generationerror', 'block_dixeo_modulegen');
+            } else if (status === 4) {
+                task.statusdisplay = await Str.get_string('cancelled', 'block_dixeo_modulegen');
+            }
+
+            // Remove button: allowed for queued, completed, failed, cancelled; tooltip varies.
+            task.canremove = (status === 0 || status === 2 || status === 3 || status === 4);
+            if (task.canremove) {
+                task.removetooltip = status === 0
+                    ? await Str.get_string('removefromqueue', 'block_dixeo_modulegen')
+                    : await Str.get_string('removefromdisplay', 'block_dixeo_modulegen');
+            }
         },
 
         /**
-         * Add filtering listeners to the queue container.
-         */
-        addFilteringListeners: function() {
-            if (!this.queueContainer) {
-                return;
-            }
-
-            if (this.queueContainer.dataset.listenerAttached === 'true') {
-                return;
-            }
-
-            this.queueContainer.dataset.listenerAttached = 'true';
-            // Filtering is now handled by handleStatClick in the footer.
-        },
-
-        /**
-         * Add action button listeners to the queue container.
+         * Add action button listeners to the queue container (remove, instructions tooltip).
          */
         addActionListeners: function() {
             if (!this.queueContainer) {
                 return;
             }
 
-            const cancelButtons = this.queueContainer.querySelectorAll('.task-item .cancel-task-button');
-            cancelButtons.forEach((button) => {
-                button.addEventListener('click', () => this.handleCancelTask(button));
+            const removeButtons = this.queueContainer.querySelectorAll('.task-item .task-remove-button');
+            removeButtons.forEach((button) => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.handleRemoveTask(button);
+                });
+            });
+
+            const retryLinks = this.queueContainer.querySelectorAll('.task-item .task-retry-link');
+            retryLinks.forEach((link) => {
+                link.addEventListener('click', (e) => this.handleRetryClick(e, link));
+            });
+
+            this.bindInstructionsTooltips();
+        },
+
+        /**
+         * Open generation modal for retry with task instructions prefilled.
+         *
+         * @param {Event} e - The click event.
+         * @param {Element} link - The retry link element.
+         */
+        handleRetryClick: function(e, link) {
+            e.preventDefault();
+            const taskItem = link.closest('.task-item');
+            if (!taskItem) {
+                return;
+            }
+            const contentEl = taskItem.querySelector('.task-instructions-content');
+            const instructions = contentEl ? contentEl.textContent.trim() : '';
+            document.dispatchEvent(new CustomEvent('generationModalRetry', {
+                detail: {
+                    taskId: link.getAttribute('data-task-id'),
+                    instructions: instructions,
+                    modulename: link.getAttribute('data-module-name') || '',
+                    sectionnumber: link.getAttribute('data-sectionnumber') || '0',
+                    beforemod: link.getAttribute('data-beforemod') || '0',
+                    courseid: link.getAttribute('data-courseid') || ''
+                }
+            }));
+        },
+
+        /**
+         * Bind hover tooltips for task instructions (info icon).
+         */
+        bindInstructionsTooltips: function() {
+            if (!this.queueContainer) {
+                return;
+            }
+
+            const triggers = this.queueContainer.querySelectorAll('.task-instructions-trigger-wrapper');
+            const block = document.querySelector('.block_dixeo_modulegen');
+            let hideTimeout = null;
+
+            const hideTooltip = () => {
+                hideTimeout = setTimeout(() => {
+                    const el = (block || document.body).querySelector('.task-instructions-tooltip');
+                    if (el) {
+                        el.style.display = 'none';
+                    }
+                    hideTimeout = null;
+                }, 100);
+            };
+
+            let tooltipEl = (block || document.body).querySelector('.task-instructions-tooltip');
+            if (!tooltipEl) {
+                tooltipEl = document.createElement('div');
+                tooltipEl.className = 'task-instructions-tooltip';
+                tooltipEl.setAttribute('role', 'tooltip');
+                (block || document.body).appendChild(tooltipEl);
+                tooltipEl.addEventListener('mouseenter', () => {
+                    if (hideTimeout) {
+                        clearTimeout(hideTimeout);
+                        hideTimeout = null;
+                    }
+                });
+                tooltipEl.addEventListener('mouseleave', () => hideTooltip());
+            }
+            tooltipEl.style.display = 'none';
+
+            const showTooltip = (wrapper, content) => {
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                    hideTimeout = null;
+                }
+                const text = (content && content.trim()) ? content.trim() : null;
+                if (text) {
+                    tooltipEl.textContent = text;
+                } else {
+                    Str.get_string('noinstructions', 'block_dixeo_modulegen').then((s) => {
+                        tooltipEl.textContent = s;
+                    });
+                }
+                tooltipEl.style.display = 'block';
+                const rect = wrapper.getBoundingClientRect();
+                let top = rect.bottom + 6;
+                let left = rect.left;
+                tooltipEl.style.top = top + 'px';
+                tooltipEl.style.left = left + 'px';
+                requestAnimationFrame(() => {
+                    const tr = tooltipEl.getBoundingClientRect();
+                    if (tr.bottom > window.innerHeight - 8) {
+                        tooltipEl.style.top = (rect.top - tr.height - 6) + 'px';
+                    }
+                    if (tr.right > window.innerWidth - 8) {
+                        tooltipEl.style.left = (window.innerWidth - tr.width - 8) + 'px';
+                    }
+                    if (parseInt(tooltipEl.style.left, 10) < 8) {
+                        tooltipEl.style.left = '8px';
+                    }
+                });
+            };
+
+            triggers.forEach((wrapper) => {
+                const contentEl = wrapper.querySelector('.task-instructions-content');
+                const content = contentEl ? contentEl.textContent : '';
+
+                wrapper.addEventListener('mouseenter', () => showTooltip(wrapper, content));
+                wrapper.addEventListener('mouseleave', () => hideTooltip());
+                wrapper.addEventListener('focus', () => showTooltip(wrapper, content));
+                wrapper.addEventListener('blur', () => hideTooltip());
+
+                const trigger = wrapper.querySelector('.task-instructions-trigger');
+                if (trigger) {
+                    trigger.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            if (tooltipEl.style.display === 'none') {
+                                showTooltip(wrapper, content);
+                            } else {
+                                tooltipEl.style.display = 'none';
+                            }
+                        }
+                        if (e.key === 'Escape') {
+                            tooltipEl.style.display = 'none';
+                        }
+                    });
+                }
             });
         },
 
         /**
-         * Handle cancel button click.
+         * Handle remove (X) button click - delete task and refresh.
          *
-         * @param {Element} button - The cancel button.
+         * @param {Element} button - The remove button.
          */
-        handleCancelTask: async function(button) {
+        handleRemoveTask: async function(button) {
             const taskId = button.getAttribute('data-task-id');
             if (!taskId) {
                 return;
@@ -611,53 +665,13 @@ define([
 
             button.disabled = true;
 
-            const confirmTitle = await Str.get_string('canceltask', 'block_dixeo_modulegen');
-            const confirmBody = await Str.get_string('canceltaskconfirm', 'block_dixeo_modulegen');
-
             try {
-                const modal = await ModalSaveCancel.create({
-                    title: confirmTitle,
-                    body: confirmBody,
-                    show: true,
-                    removeOnClose: true,
-                });
-
-                modal.getRoot().on(ModalEvents.save, () => {
-                    this.cancelTask(parseInt(taskId));
-                });
-
-                modal.getRoot().on(ModalEvents.hidden, () => {
-                    button.disabled = false;
-                    this.updateQueueList();
-                });
-
-                modal.getRoot().on(ModalEvents.cancel, () => {
-                    button.disabled = false;
-                    this.updateQueueList();
-                });
-
+                await JobManager.removeTask(parseInt(taskId, 10));
+                this.updateQueueStatistics();
+                this.updateQueueList();
             } catch (error) {
                 Notification.exception(error);
-            }
-        },
-
-        /**
-         * Cancel a task via the job manager.
-         *
-         * @param {number} taskId - The task ID.
-         */
-        cancelTask: async function(taskId) {
-            try {
-                await JobManager.cancelJob(taskId);
-
-                const successTitle = await Str.get_string('cancelled', 'block_dixeo_modulegen');
-                const successMessage = await Str.get_string('taskcancelled', 'block_dixeo_modulegen');
-                Notification.alert(successTitle, successMessage);
-                this.updateQueueList();
-
-            } catch (error) {
-                const errorTitle = await Str.get_string('taskcancelerror', 'block_dixeo_modulegen');
-                Notification.alert(errorTitle, error.message || String(error));
+                button.disabled = false;
             }
         },
 
@@ -691,8 +705,8 @@ define([
                 return;
             }
 
-            // Handle elapsed time updates for processing tasks.
-            if (data.stats && data.stats.processing > 0) {
+            // Handle elapsed time updates when there are active (queued or processing) tasks.
+            if (data.stats && data.stats.active > 0) {
                 if (!this.elapsedInterval) {
                     this.elapsedInterval = setInterval(() => {
                         this.updateElapsedTime();
@@ -705,19 +719,15 @@ define([
                 }
             }
 
-            // Render stats.
-            const stats = data.stats || {queued: 0, processing: 0, completed: 0};
-            stats.hasqueued = stats.queued > 0;
-            stats.hasprocessing = stats.processing > 0;
-            stats.hascompleted = stats.completed > 0;
+            // Render stats (active = queued + processing, errors = failed + cancelled).
+            const stats = data.stats || {active: 0, errors: 0};
 
             this.stats = stats;
 
-            const html = await Templates.render('block_dixeo_modulegen/queue_stats', {stats: stats});
+            const idleStr = await Str.get_string('idle', 'block_dixeo_modulegen');
+            const html = await Templates.render('block_dixeo_modulegen/queue_stats', {stats: stats, idle: idleStr});
             this.blockFooter.innerHTML = html;
             this.updateElapsedTime();
-            // Update active state after rendering stats.
-            this.updateStatsActiveState();
         },
 
         /**
@@ -727,8 +737,8 @@ define([
             // Update elapsed time in the queue container if expanded.
             if (this.queueContainer) {
                 const processingTasks = this.queueContainer.querySelectorAll('.task-item[data-status="1"]');
-                processingTasks.forEach((task) => {
-                    const startTime = task.getAttribute('data-timestarted');
+                processingTasks.forEach((taskEl) => {
+                    const startTime = taskEl.getAttribute('data-timestarted');
                     if (!startTime) {
                         return;
                     }
@@ -747,7 +757,7 @@ define([
                     }
                     elapsedStr += String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
-                    const elapsedElement = task.querySelector('.elapsed-time');
+                    const elapsedElement = taskEl.querySelector('.task-status-processing .elapsed-time');
                     if (elapsedElement) {
                         elapsedElement.textContent = elapsedStr;
                     }

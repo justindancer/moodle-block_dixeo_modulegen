@@ -158,6 +158,28 @@ define([
     };
 
     /**
+     * Delete a task (remove from queue or from display).
+     *
+     * @param {number} queueId - The queue record ID.
+     * @returns {Promise<Object>} Resolves with {success, message}.
+     */
+    const deleteTask = (queueId) => {
+        if (!queueId) {
+            return Promise.reject(new Error('Queue ID required'));
+        }
+        activeJobs.delete(queueId);
+        return Ajax.call([{
+            methodname: 'block_dixeo_modulegen_delete_task',
+            args: {queue_id: queueId}
+        }])[0].then((result) => {
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to remove task');
+            }
+            return result;
+        });
+    };
+
+    /**
      * Create the module from a completed job.
      *
      * @param {string} jobId - The completed job UUID.
@@ -422,8 +444,9 @@ define([
     /**
      * Resume polling for PROCESSING jobs found on page load.
      * This handles browser refresh during an active generation.
+     * Uses task record fields (instructions, sectionnumber, beforemod) for job args.
      *
-     * @param {Array} tasks - Array of task objects from queue status.
+     * @param {Array} tasks - Array of task objects from get_queue_status API.
      */
     const resumeProcessingJobs = (tasks) => {
         if (!tasks || !Array.isArray(tasks)) {
@@ -441,8 +464,6 @@ define([
 
             // STATUS_PROCESSING = 1
             if (status === 1 && task.job_id) {
-                const params = task.params ? JSON.parse(task.params) : {};
-
                 activeJobs.set(queueId, {
                     jobId: task.job_id,
                     status: 'processing',
@@ -450,9 +471,9 @@ define([
                     args: {
                         courseid: courseId,
                         modulename: task.modulename,
-                        instructions: params.instructions || '',
-                        sectionnumber: params.sectionnumber || 0,
-                        beforemod: params.beforemod || 0
+                        instructions: task.instructions || '',
+                        sectionnumber: task.sectionnumber || 0,
+                        beforemod: task.beforemod || 0
                     },
                     timeoutId: null
                 });
@@ -464,8 +485,6 @@ define([
 
             // STATUS_PENDING = 0
             if (status === 0) {
-                const params = task.params ? JSON.parse(task.params) : {};
-
                 activeJobs.set(queueId, {
                     jobId: null,
                     status: 'queued',
@@ -473,9 +492,9 @@ define([
                     args: {
                         courseid: courseId,
                         modulename: task.modulename,
-                        instructions: params.instructions || '',
-                        sectionnumber: params.sectionnumber || 0,
-                        beforemod: params.beforemod || 0
+                        instructions: task.instructions || '',
+                        sectionnumber: task.sectionnumber || 0,
+                        beforemod: task.beforemod || 0
                     },
                     timeoutId: null
                 });
@@ -613,6 +632,17 @@ define([
             activeJobs.delete(queueId);
 
             return updateTask(queueId, 'cancel', 0, '');
+        },
+
+        /**
+         * Remove a task from the queue (delete from database).
+         * Allowed for queued, completed, failed, cancelled. Not for processing.
+         *
+         * @param {number} queueId - The queue record ID.
+         * @returns {Promise<Object>} Resolves with {success, message}.
+         */
+        removeTask: function(queueId) {
+            return deleteTask(queueId);
         },
 
         /**

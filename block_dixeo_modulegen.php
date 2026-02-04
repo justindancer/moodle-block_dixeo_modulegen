@@ -102,6 +102,7 @@ class block_dixeo_modulegen extends block_base {
 
         require_once($CFG->libdir . '/filelib.php');
 
+        // Return cached content to avoid re-rendering on every call (Moodle may call get_content multiple times).
         if ($this->content !== null) {
             return $this->content;
         }

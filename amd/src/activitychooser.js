@@ -21,6 +21,8 @@ define([
     'block_dixeo_modulegen/queue_status',
     'block_dixeo_modulegen/ai_action'
 ], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction) {
+    'use strict';
+
     let initialized = false;
     let course = null;
     let categories = null;
@@ -148,26 +150,29 @@ define([
             return;
         }
 
-        let block = document.querySelector('.block_dixeo_modulegen');
+        const block = document.querySelector('.block_dixeo_modulegen');
         if (block) {
-            let caller = document.querySelector('.course-section[data-sectionid]:last-of-type');
+            const caller = document.querySelector('.course-section[data-sectionid]:last-of-type');
             let origin = window.location.pathname.includes('/course/section.php') ? 'section' : 'view';
-            let context = {
+            const context = {
                 courseid: course,
                 categories: categories,
-                sectionid: caller.dataset.sectionid,
-                origin: origin
+                sectionid: caller ? caller.dataset.sectionid : '',
+                origin: origin,
+                config: {wwwroot: M.cfg.wwwroot},
+                generation_title: ''
             };
 
             Templates.render('block_dixeo_modulegen/activitychooser', context)
             .then(function(html, js) {
-                let container = block.querySelector('#dixeo-module-generator');
+                const container = block.querySelector('#dixeo-module-generator');
                 container.insertAdjacentHTML('beforeend', html);
 
                 if (js) {
                     Templates.runTemplateJS(js);
                 }
 
+                registerCategoryToggles(block);
                 addDragAndDrop(block);
 
                 // Initialize job manager FIRST - it handles all job lifecycle.
@@ -194,6 +199,31 @@ define([
     }
 
     /**
+     * Register category expand/collapse toggles (no inline handlers).
+     *
+     * @param {HTMLElement} block - The block element.
+     */
+    function registerCategoryToggles(block) {
+        const optionsContainer = block.querySelector('.optionscontainer');
+        if (!optionsContainer) {
+            return;
+        }
+        optionsContainer.addEventListener('click', function(e) {
+            const btn = e.target.closest('[data-action="toggle-category"]');
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            const category = btn.closest('.category');
+            if (!category) {
+                return;
+            }
+            const expanded = category.classList.toggle('dixeo-collapsed');
+            btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        });
+    }
+
+    /**
      * Adds drag and drop functionality to options and activities.
      *
      * On drop, the function constructs a URL using the dragged option's href, the
@@ -208,8 +238,8 @@ define([
             return;
         }
 
-        let options = block.querySelectorAll('.optionscontainer .optioninfo a');
-        Array.prototype.forEach.call(options, function(option) {
+        const options = block.querySelectorAll('.optionscontainer .optioninfo a[data-target="#generationModal"]');
+        options.forEach(function(option) {
             if (option.classList.contains('disabled')) {
                 return;
             }
@@ -226,10 +256,10 @@ define([
             });
         });
 
-        let activities = document.querySelectorAll('.course-content div[data-for="section_title"], .course-content .activity');
-        Array.prototype.forEach.call(activities, function(activity) {
+        const activities = document.querySelectorAll('.course-content div[data-for="section_title"], .course-content .activity');
+        activities.forEach(function(activity) {
             activity.addEventListener('dragover', function(e) {
-                let activeOption = block.querySelector('.optioninfo a.dragging');
+                    const activeOption = block.querySelector('.optioninfo a.dragging');
                 if (activeOption) {
                     e.preventDefault();
                     activity.classList.add('dd-drop-down');
@@ -237,7 +267,7 @@ define([
             });
 
             activity.addEventListener('dragleave', function(e) {
-                let activeOption = block.querySelector('.optioninfo a.dragging');
+                    const activeOption = block.querySelector('.optioninfo a.dragging');
                 if (activeOption) {
                     e.preventDefault();
                     activity.classList.remove('dd-drop-down');
@@ -245,14 +275,14 @@ define([
             });
 
             activity.addEventListener('drop', function(e) {
-                let activeOption = block.querySelector('.optioninfo a.dragging');
+                    const activeOption = block.querySelector('.optioninfo a.dragging');
                 if (activeOption) {
                     e.preventDefault();
                     activity.classList.remove('dd-drop-down');
 
-                    let sectionId = activity.closest('.course-section').dataset.sectionid;
+                    const sectionId = activity.closest('.course-section').dataset.sectionid;
                     let beforeMod = null;
-                    let nextActivity = activity.nextElementSibling;
+                    const nextActivity = activity.nextElementSibling;
                     if (nextActivity) {
                         beforeMod = nextActivity.dataset.id;
                     }

@@ -1,28 +1,37 @@
-<form id="dixeo_generator_form" class="generator-form" method="post">
+{{!
+    Generation form: title, instructions textarea, generate button.
+
+    @template block_dixeo_modulegen/prompt
+    @package    block_dixeo_modulegen
+}}
+<form id="dixeo_generator_form" method="post" class="generator-form">
     <div class="modal-header">
-        <h5 class="modal-title text-center" id="generationModalLabel">{{generation_title}}</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span>&times;</span>
+        <h5 class="modal-title w-100 text-center" id="generationModalLabel">{{generation_title}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="{{#str}}close, moodle{{/str}}">
+            <span aria-hidden="true">&times;</span>
         </button>
     </div>
     <div class="modal-body">
-        <div class="d-flex flex-column justify-content-center">
-            <div class="d-flex flex-column w-100">
-                <div id="prompt-form" class="form-group position-relative mb-0">
-                    <textarea id="instructions" name="instructions" class="form-control mb-2" placeholder="{{#str}} prompt_placeholder, block_dixeo_modulegen {{/str}}" required></textarea>
-                </div>
-            </div>
+        <div class="form-group mb-0">
+            <label for="instructions" class="sr-only">{{#str}}prompt_placeholder, block_dixeo_modulegen{{/str}}</label>
+            <textarea id="instructions"
+                name="instructions"
+                class="form-control"
+                rows="4"
+                placeholder="{{#str}}prompt_placeholder, block_dixeo_modulegen{{/str}}"
+                required></textarea>
         </div>
         <input type="hidden" id="origin" name="origin" value="{{origin}}">
         <input type="hidden" id="courseid" name="courseid" value="{{courseid}}">
         <input type="hidden" id="sectionnumber" name="sectionnumber" value="{{sectionid}}">
         <input type="hidden" id="modulename" name="modulename" value="">
         <input type="hidden" id="beforemod" name="beforemod" value="0">
+        <input type="hidden" id="retry_task_id" name="retry_task_id" value="">
     </div>
-    <div class="modal-footer d-inline-flex justify-content-end w-100 p-2 px-3">
-        <button id="generate_button" class="btn btn-secondary btn-circle text-white d-flex align-items-center" title="{{#str}} generate, block_dixeo_modulegen {{/str}}">
-            <img src="{{config.wwwroot}}/blocks/dixeo_modulegen/pix/dixeo-white.svg" alt="Logo" width="25" height="25">
-            <span>{{#str}} generate, block_dixeo_modulegen {{/str}}</span>
+    <div class="modal-footer justify-content-end">
+        <button type="submit" id="generate_button" class="btn btn-primary" title="{{#str}}generate, block_dixeo_modulegen{{/str}}">
+            <img src="{{config.wwwroot}}/blocks/dixeo_modulegen/pix/dixeo-white.svg" alt="" width="20" height="20" class="mr-1">
+            {{#str}}generate, block_dixeo_modulegen{{/str}}
         </button>
     </div>
 </form>

@@ -14,7 +14,7 @@ $string['blocktitle'] = 'Ajouter du contenu généré par IA';
 $string['dixeo_modulegen:addinstance'] = 'Ajouter un bloc Générateur de contenu Dixeo';
 $string['dixeo_modulegen:myaddinstance'] = 'Ajouter un bloc Générateur de contenu Dixeo au tableau de bord';
 
-$string['aiactivities'] = 'Générer';
+$string['aiactivities'] = 'Générateur de contenu Dixeo';
 $string['notavailable'] = 'Ce module n\'est pas disponible ou n\'est pas correctement configuré. Veuillez réessayer plus tard ou contacter votre administrateur.';
 $string['pluginrequired'] = 'Installez le plugin {$a} pour générer ce type d\'activité.';
 
@@ -30,12 +30,16 @@ $string['success_message'] = 'Une nouvelle tâche de génération de contenu a �
 $string['generation_complete'] = 'Votre contenu a été généré avec succès ! Actualisez la page pour le voir.';
 
 // Queue management.
+$string['opengeneratorqueue'] = 'Ouvrir la file du générateur';
 $string['queue_processor'] = 'Processeur de file d\'attente de génération de contenu Dixeo';
 $string['queuemodaltitle'] = 'File d\'attente de génération';
 $string['notasksinthequeue'] = 'La file d\'attente des tâches est actuellement vide.';
 $string['queued'] = 'En attente';
 $string['processing'] = 'En cours de traitement';
 $string['completed'] = 'Terminé';
+$string['activequeued'] = 'Actifs/En attente';
+$string['idle'] = 'Inactif';
+$string['needsattention'] = 'À traiter';
 $string['cancelled'] = 'Annulé';
 $string['canceltask'] = 'Annuler';
 $string['canceltaskconfirm'] = 'Êtes-vous sûr de vouloir annuler cette tâche ? Cette action ne peut pas être annulée.';
@@ -46,6 +50,16 @@ $string['generationqueued'] = 'En attente dans la file';
 $string['generationinprogress'] = 'Génération en cours (<span class="elapsed-time">0:00</span>)';
 $string['generationfailed'] = 'La génération a échoué';
 $string['generationcancelled'] = 'Génération annulée';
+$string['generationerror'] = 'Erreur de génération';
+$string['next'] = 'Suivant';
+$string['newmoduletype'] = 'Nouveau {$a}';
+$string['removefromqueue'] = 'Retirer de la file';
+$string['removefromdisplay'] = 'Retirer de l\'affichage';
+$string['completedon'] = 'Terminé le {$a}';
+$string['viewinstructions'] = 'Voir les instructions';
+$string['noinstructions'] = 'Aucune instruction pour cette tâche.';
+$string['retry'] = 'Réessayer';
+$string['retrygeneration'] = 'Réessayer la génération';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'En attente';

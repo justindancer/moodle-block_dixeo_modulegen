@@ -40,4 +40,14 @@ $functions = [
         'ajax' => true,
         'capabilities' => 'moodle/course:manageactivities',
     ],
+
+    // Delete a task (remove from queue or from display).
+    'block_dixeo_modulegen_delete_task' => [
+        'classname' => 'block_dixeo_modulegen\external\api',
+        'methodname' => 'delete_task',
+        'description' => 'Delete a task (allowed for queued, completed, failed, cancelled)',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/course:manageactivities',
+    ],
 ];

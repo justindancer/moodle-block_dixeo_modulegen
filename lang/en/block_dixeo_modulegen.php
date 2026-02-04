@@ -14,7 +14,7 @@ $string['blocktitle'] = 'Add AI generated content';
 $string['dixeo_modulegen:addinstance'] = 'Add a Dixeo Content Generator block';
 $string['dixeo_modulegen:myaddinstance'] = 'Add a Dixeo Content Generator block to Dashboard';
 
-$string['aiactivities'] = 'Generate';
+$string['aiactivities'] = 'Dixeo Content Generator';
 $string['notavailable'] = 'This module is not available or not properly configured. Please try again later or contact your administrator.';
 $string['pluginrequired'] = 'Install the {$a} plugin to generate this activity type.';
 
@@ -30,12 +30,16 @@ $string['success_message'] = 'A new content generation task has been added to th
 $string['generation_complete'] = 'Your content has been generated successfully! Refresh the page to see it.';
 
 // Queue management.
+$string['opengeneratorqueue'] = 'Open generator queue';
 $string['queue_processor'] = 'Dixeo Content Generation Queue Processor';
 $string['queuemodaltitle'] = 'Generation Queue';
 $string['notasksinthequeue'] = 'The task queue is currently empty.';
 $string['queued'] = 'Queued';
 $string['processing'] = 'Processing';
 $string['completed'] = 'Completed';
+$string['activequeued'] = 'Active/Queued';
+$string['idle'] = 'Idle';
+$string['needsattention'] = 'Needs attention';
 $string['cancelled'] = 'Cancelled';
 $string['canceltask'] = 'Cancel';
 $string['canceltaskconfirm'] = 'Are you sure you want to cancel this task? This action cannot be undone.';
@@ -46,6 +50,16 @@ $string['generationqueued'] = 'Waiting in queue';
 $string['generationinprogress'] = 'Generation in progress (<span class="elapsed-time">0:00</span>)';
 $string['generationfailed'] = 'Generation failed';
 $string['generationcancelled'] = 'Generation cancelled';
+$string['generationerror'] = 'Generation error';
+$string['next'] = 'Next';
+$string['newmoduletype'] = 'New {$a}';
+$string['removefromqueue'] = 'Remove from queue';
+$string['removefromdisplay'] = 'Remove from display';
+$string['completedon'] = 'Completed on {$a}';
+$string['viewinstructions'] = 'View instructions';
+$string['noinstructions'] = 'No instructions for this task.';
+$string['retry'] = 'Retry';
+$string['retrygeneration'] = 'Retry generation';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'Pending';

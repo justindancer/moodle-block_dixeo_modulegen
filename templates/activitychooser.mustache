@@ -1,21 +1,31 @@
-<div id="module-generator-options" class="card-body p-0 d-flex flex-wrap overflow-y">
+{{!
+    Activity chooser: categories and module type options. Footer holds queue status bar.
+
+    @template block_dixeo_modulegen/activitychooser
+    @package    block_dixeo_modulegen
+}}
+<div id="module-generator-options" class="card-body p-0 d-flex flex-column">
     <div class="optionscontainer w-100">
         {{#categories}}
             <div class="category">
-                <div class="subcategory d-flex justify-content-between" onclick="this.parentElement.classList.toggle('dixeo-collapsed');">
+                <button type="button"
+                    class="subcategory btn btn-link btn-block text-left d-flex justify-content-between align-items-center p-2 border-0 rounded-0 border-bottom"
+                    data-action="toggle-category"
+                    aria-expanded="true">
                     <span>{{name}}</span>
-                    <span class="dixeo-module-generator-toggle">
-                        <i class="fa fa-chevron-down"></i>
+                    <span class="collapse-icon collapse-icon-toggle d-flex align-items-center justify-content-center" aria-hidden="true">
+                        <span class="icon-expand d-none">+</span>
+                        <span class="icon-collapse">−</span>
                     </span>
+                </button>
+                <div class="category-items row mx-0" role="region">
+                    {{#items}}
+                        {{> block_dixeo_modulegen/item}}
+                    {{/items}}
                 </div>
-                {{#items}}
-                    {{>block_dixeo_modulegen/item}}
-                {{/items}}
             </div>
         {{/categories}}
     </div>
 </div>
-<div class="card-footer p-3">
-
-</div>
-{{>block_dixeo_modulegen/modal}}
+<footer class="card-footer" role="status" aria-live="polite"></footer>
+{{> block_dixeo_modulegen/modal}}
