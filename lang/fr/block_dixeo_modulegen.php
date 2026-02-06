@@ -55,6 +55,7 @@ $string['next'] = 'Suivant';
 $string['newmoduletype'] = 'Nouveau {$a}';
 $string['removefromqueue'] = 'Retirer de la file';
 $string['removefromdisplay'] = 'Retirer de l\'affichage';
+$string['cancelgeneration'] = 'Annuler la génération';
 $string['completedon'] = 'Terminé le {$a}';
 $string['viewinstructions'] = 'Voir les instructions';
 $string['noinstructions'] = 'Aucune instruction pour cette tâche.';

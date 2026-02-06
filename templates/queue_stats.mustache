@@ -10,10 +10,12 @@
             <i class="fa fa-spinner mr-1" aria-hidden="true"></i>
             <span class="count">{{#stats.active}}{{stats.active}}{{/stats.active}}{{^stats.active}}{{idle}}{{/stats.active}}</span>
         </span>
+        {{#stats.errors}}
         <span class="stat stat-errors d-flex align-items-center" title="{{#str}}needsattention, block_dixeo_modulegen{{/str}}: {{stats.errors}}">
             <i class="fa fa-exclamation-triangle mr-1" aria-hidden="true"></i>
             <span class="count">{{stats.errors}}</span>
         </span>
+        {{/stats.errors}}
     </div>
     <div class="queue-status-bar-right" aria-hidden="true"></div>
 </div>

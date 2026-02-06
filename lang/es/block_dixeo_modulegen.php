@@ -54,6 +54,7 @@ $string['next'] = 'Siguiente';
 $string['newmoduletype'] = 'Nuevo {$a}';
 $string['removefromqueue'] = 'Quitar de la cola';
 $string['removefromdisplay'] = 'Quitar de la vista';
+$string['cancelgeneration'] = 'Cancelar generación';
 $string['completedon'] = 'Completado el {$a}';
 $string['viewinstructions'] = 'Ver instrucciones';
 $string['noinstructions'] = 'Sin instrucciones para esta tarea.';

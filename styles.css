@@ -131,26 +131,21 @@
     border: none;
     border-radius: 0;
     background: transparent;
-    color: var(--dixeo-modulegen-text-muted);
-    font-size: 0.875rem;
+    color: #000;
+    font-size: 0.75rem;
 }
 
 .block_dixeo_modulegen .queue-status-bar .stat .count {
     font-weight: 600;
-    font-size: 0.875rem;
-    color: inherit;
+    font-size: 0.75rem;
+    color: #000;
 }
 
-.block_dixeo_modulegen .fa-spinner {
+/* Only the icons are colored; text stays black */
+.block_dixeo_modulegen .queue-status-bar .stat-active .fa-spinner {
     color: var(--dixeo-modulegen-primary);
 }
 
-.block_dixeo_modulegen .queue-status-bar .stat-active,
-.block_dixeo_modulegen .queue-status-bar .stat-active .count {
-    color: var(--dixeo-modulegen-primary);
-}
-
-.block_dixeo_modulegen .queue-status-bar .stat-errors,
 .block_dixeo_modulegen .queue-status-bar .stat-errors .fa-exclamation-triangle {
     color: var(--dixeo-modulegen-error);
 }
@@ -345,22 +340,12 @@
     padding: 0.25rem 0;
 }
 
-/* Task instructions info icon (before status). */
+/* Instructions: hover over status area (wrapper) shows tooltip; no icon. */
 .task-list .task-instructions-trigger-wrapper {
     vertical-align: middle;
 }
 
-.task-list .task-instructions-icon {
-    font-size: 0.8rem;
-    color: var(--dixeo-modulegen-text-muted);
-    cursor: help;
-}
-
-.task-list .task-instructions-icon:hover {
-    color: var(--dixeo-modulegen-primary);
-}
-
-/* Instructions tooltip (shown on hover, created in JS). */
+/* Instructions tooltip (shown on hover, created in JS; appended to body so use fallbacks). */
 .task-instructions-tooltip {
     position: fixed;
     z-index: 1060;
@@ -369,11 +354,11 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
     line-height: 1.4;
-    color: var(--dixeo-modulegen-text);
-    background: var(--dixeo-modulegen-bg);
-    border: 1px solid var(--dixeo-modulegen-border);
+    color: var(--dixeo-modulegen-text, #495057);
+    background: var(--dixeo-modulegen-bg, #fff);
+    border: 1px solid var(--dixeo-modulegen-border, #dee2e6);
     border-radius: 4px;
-    box-shadow: var(--dixeo-modulegen-shadow-md);
+    box-shadow: var(--dixeo-modulegen-shadow-md, 4px 4px 10px rgba(0, 0, 0, 0.2));
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
@@ -386,21 +371,22 @@
     opacity: 0.6;
 }
 
-/* Status: processing = green badge with elapsed time (fixed width to avoid jump on tick). */
+/* Status: processing = green bar with elapsed time (fixed width to avoid jump on tick). */
 .task-list .task-status-processing {
     display: inline-flex;
     align-items: center;
     gap: 0.2rem;
-    padding: 0.2rem 0.4rem;
+    padding: 0 0.4rem;
     margin-top: 0.15rem;
     min-width: 10em;
+    min-height: 1.25em;
     box-sizing: border-box;
     background-color: var(--dixeo-modulegen-success);
     color: white;
     border-radius: 3px;
     font-size: 0.75rem;
     font-weight: 500;
-    cursor: default;
+    cursor: inherit;
     user-select: none;
 }
 
@@ -419,7 +405,7 @@
     margin-top: 0.15rem;
     padding-right: 0.15rem;
     font-size: 0.75rem;
-    cursor: default;
+    cursor: inherit;
     user-select: none;
 }
 
@@ -428,6 +414,7 @@
     display: inline-flex;
     align-items: center;
     flex-wrap: wrap;
+    cursor: inherit;
 }
 .task-list .task-status-sep {
     width: 1px;
@@ -471,6 +458,16 @@
     cursor: not-allowed;
 }
 
+/* Row disabled while remove/cancel request is in progress */
+.task-list .task-item-removing {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.task-list .task-item-removing .task-remove-button {
+    opacity: 1;
+}
+
 /* --- 4.4 Modal stats (large layout when used in modal) --- */
 
 .modal .stats-container .stat.active {
@@ -487,7 +484,6 @@
     flex: 1;
     overflow-y: auto;
     min-height: 310px !important;
-    max-height: 360px !important;
 }
 
 .block_dixeo_modulegen #module-generator-options .optionname {

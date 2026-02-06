@@ -14,6 +14,7 @@
 namespace block_dixeo_modulegen;
 
 use local_dixeo\service\module_generation_service;
+use local_dixeo\service\job_service;
 use local_dixeo\api\exception\api_exception;
 
 defined('MOODLE_INTERNAL') || die();
@@ -144,10 +145,10 @@ class queue_service {
     }
 
     /**
-     * Cancel a pending task.
+     * Cancel a pending or processing task.
      *
-     * Only PENDING tasks can be cancelled. PROCESSING tasks are already
-     * running and cannot be cancelled through this method.
+     * PENDING: mark as CANCELLED only.
+     * PROCESSING: tell the Dixeo API to cancel the job, mark task CANCELLED, then start the next pending task.
      *
      * @param int $queueid The queue record ID.
      * @return bool True if cancelled successfully, false otherwise.
@@ -158,15 +159,30 @@ class queue_service {
             return false;
         }
 
-        // Only allow cancelling PENDING tasks.
-        if ((int) $task->status !== queue_status::STATUS_PENDING) {
-            return false;
+        $status = (int) $task->status;
+
+        if ($status === queue_status::STATUS_PENDING) {
+            $task->status = queue_status::STATUS_CANCELLED;
+            $task->timecompleted = time();
+            return queue_repository::update($task);
         }
 
-        $task->status = queue_status::STATUS_CANCELLED;
-        $task->timecompleted = time();
+        if ($status === queue_status::STATUS_PROCESSING) {
+            if (!empty($task->jobid)) {
+                try {
+                    (new job_service())->cancel_job($task->jobid);
+                } catch (\Exception $e) {
+                    // Still mark as cancelled and start next so the queue does not get stuck.
+                }
+            }
+            $task->status = queue_status::STATUS_CANCELLED;
+            $task->timecompleted = time();
+            queue_repository::update($task);
+            self::start_next((int) $task->courseid);
+            return true;
+        }
 
-        return queue_repository::update($task);
+        return false;
     }
 
     /**

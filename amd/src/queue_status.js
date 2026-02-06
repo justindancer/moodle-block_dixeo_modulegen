@@ -494,12 +494,16 @@ define([
                 task.statusdisplay = await Str.get_string('cancelled', 'block_dixeo_modulegen');
             }
 
-            // Remove button: allowed for queued, completed, failed, cancelled; tooltip varies.
-            task.canremove = (status === 0 || status === 2 || status === 3 || status === 4);
+            // Remove button: allowed for queued, processing, completed, failed, cancelled; tooltip varies.
+            task.canremove = (status === 0 || status === 1 || status === 2 || status === 3 || status === 4);
             if (task.canremove) {
-                task.removetooltip = status === 0
-                    ? await Str.get_string('removefromqueue', 'block_dixeo_modulegen')
-                    : await Str.get_string('removefromdisplay', 'block_dixeo_modulegen');
+                if (status === 1) {
+                    task.removetooltip = await Str.get_string('cancelgeneration', 'block_dixeo_modulegen');
+                } else if (status === 0) {
+                    task.removetooltip = await Str.get_string('removefromqueue', 'block_dixeo_modulegen');
+                } else {
+                    task.removetooltip = await Str.get_string('removefromdisplay', 'block_dixeo_modulegen');
+                }
             }
         },
 
@@ -554,7 +558,7 @@ define([
         },
 
         /**
-         * Bind hover tooltips for task instructions (info icon).
+         * Bind hover tooltips for task instructions (trigger = status area wrapper, no icon).
          */
         bindInstructionsTooltips: function() {
             if (!this.queueContainer) {
@@ -562,12 +566,11 @@ define([
             }
 
             const triggers = this.queueContainer.querySelectorAll('.task-instructions-trigger-wrapper');
-            const block = document.querySelector('.block_dixeo_modulegen');
             let hideTimeout = null;
 
             const hideTooltip = () => {
                 hideTimeout = setTimeout(() => {
-                    const el = (block || document.body).querySelector('.task-instructions-tooltip');
+                    const el = document.body.querySelector('.task-instructions-tooltip');
                     if (el) {
                         el.style.display = 'none';
                     }
@@ -575,12 +578,12 @@ define([
                 }, 100);
             };
 
-            let tooltipEl = (block || document.body).querySelector('.task-instructions-tooltip');
+            let tooltipEl = document.body.querySelector('.task-instructions-tooltip');
             if (!tooltipEl) {
                 tooltipEl = document.createElement('div');
                 tooltipEl.className = 'task-instructions-tooltip';
                 tooltipEl.setAttribute('role', 'tooltip');
-                (block || document.body).appendChild(tooltipEl);
+                document.body.appendChild(tooltipEl);
                 tooltipEl.addEventListener('mouseenter', () => {
                     if (hideTimeout) {
                         clearTimeout(hideTimeout);
@@ -604,12 +607,12 @@ define([
                         tooltipEl.textContent = s;
                     });
                 }
-                tooltipEl.style.display = 'block';
                 const rect = wrapper.getBoundingClientRect();
                 let top = rect.bottom + 6;
                 let left = rect.left;
                 tooltipEl.style.top = top + 'px';
                 tooltipEl.style.left = left + 'px';
+                tooltipEl.style.display = 'block';
                 requestAnimationFrame(() => {
                     const tr = tooltipEl.getBoundingClientRect();
                     if (tr.bottom > window.innerHeight - 8) {
@@ -630,30 +633,12 @@ define([
 
                 wrapper.addEventListener('mouseenter', () => showTooltip(wrapper, content));
                 wrapper.addEventListener('mouseleave', () => hideTooltip());
-                wrapper.addEventListener('focus', () => showTooltip(wrapper, content));
-                wrapper.addEventListener('blur', () => hideTooltip());
-
-                const trigger = wrapper.querySelector('.task-instructions-trigger');
-                if (trigger) {
-                    trigger.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            if (tooltipEl.style.display === 'none') {
-                                showTooltip(wrapper, content);
-                            } else {
-                                tooltipEl.style.display = 'none';
-                            }
-                        }
-                        if (e.key === 'Escape') {
-                            tooltipEl.style.display = 'none';
-                        }
-                    });
-                }
             });
         },
 
         /**
          * Handle remove (X) button click - delete task and refresh.
+         * Shows loading spinner and disables the row until the response is ready.
          *
          * @param {Element} button - The remove button.
          */
@@ -663,15 +648,35 @@ define([
                 return;
             }
 
+            const taskItem = button.closest('.task-item');
+            const status = taskItem ? parseInt(taskItem.getAttribute('data-status'), 10) : null;
+            const isProcessing = (status === 1);
+
+            const originalIcon = button.innerHTML;
+            button.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i>';
             button.disabled = true;
+            if (taskItem) {
+                taskItem.classList.add('task-item-removing');
+            }
 
             try {
-                await JobManager.removeTask(parseInt(taskId, 10));
+                if (isProcessing) {
+                    const result = await JobManager.cancelJob(parseInt(taskId, 10));
+                    if (result && result.success === false) {
+                        throw new Error(result.message || 'Cancel failed');
+                    }
+                } else {
+                    await JobManager.removeTask(parseInt(taskId, 10));
+                }
                 this.updateQueueStatistics();
                 this.updateQueueList();
             } catch (error) {
                 Notification.exception(error);
+                button.innerHTML = originalIcon;
                 button.disabled = false;
+                if (taskItem) {
+                    taskItem.classList.remove('task-item-removing');
+                }
             }
         },
 

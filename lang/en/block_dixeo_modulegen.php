@@ -55,6 +55,7 @@ $string['next'] = 'Next';
 $string['newmoduletype'] = 'New {$a}';
 $string['removefromqueue'] = 'Remove from queue';
 $string['removefromdisplay'] = 'Remove from display';
+$string['cancelgeneration'] = 'Cancel generation';
 $string['completedon'] = 'Completed on {$a}';
 $string['viewinstructions'] = 'View instructions';
 $string['noinstructions'] = 'No instructions for this task.';
