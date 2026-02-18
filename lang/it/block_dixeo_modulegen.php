@@ -14,10 +14,11 @@ $string['blocktitle'] = 'Aggiungi contenuto generato da AI';
 $string['dixeo_modulegen:addinstance'] = 'Aggiungi un blocco Generatore di Contenuti Dixeo';
 $string['dixeo_modulegen:myaddinstance'] = 'Aggiungi un blocco Generatore di Contenuti Dixeo alla Dashboard';
 
-$string['aiactivities'] = 'Genera';
+$string['aiactivities'] = 'Generatore di Contenuti Dixeo';
 $string['notavailable'] = 'Questo modulo non è disponibile o non è configurato correttamente. Riprova più tardi o contatta il tuo amministratore.';
+$string['pluginrequired'] = 'Installa il plugin {$a} per generare questo tipo di attività.';
 
-$string['generate'] = 'Generatore di Contenuti Dixeo';
+$string['generate'] = 'Genera';
 $string['prompt_placeholder'] = 'Istruzioni di modifica per l\'AI';
 $string['loading'] = 'Generazione in corso...';
 

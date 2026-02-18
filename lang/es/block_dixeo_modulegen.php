@@ -16,6 +16,7 @@ $string['dixeo_modulegen:myaddinstance'] = 'Añadir un bloque Generador de Conte
 
 $string['aiactivities'] = 'Generador de Contenido Dixeo';
 $string['notavailable'] = 'Este módulo no está disponible o no está configurado correctamente. Por favor, inténtelo de nuevo más tarde o contacte con su administrador.';
+$string['pluginrequired'] = 'Instale el plugin {$a} para generar este tipo de actividad.';
 
 $string['generate'] = 'Generar';
 $string['prompt_placeholder'] = 'Instrucciones de edición para la IA';
