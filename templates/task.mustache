@@ -17,10 +17,10 @@
         </div>
         <div class="task-details flex-grow-1 min-width-0 ml-2">
             {{#link}}
-                <a class="task-title task-title-clamp mb-0" href="{{link}}" title="{{display_title}}">{{display_title}}</a>
+                <a class="task-title task-title-clamp mb-0" href="{{link}}" title="{{displaytitle}}">{{displaytitle}}</a>
             {{/link}}
             {{^link}}
-                <span class="task-title task-title-clamp mb-0" title="{{display_title}}">{{display_title}}</span>
+                <span class="task-title task-title-clamp mb-0" title="{{displaytitle}}">{{displaytitle}}</span>
             {{/link}}
             <span class="task-instructions-trigger-wrapper d-inline-flex align-items-center">
                 <span class="d-none task-instructions-content">{{instructions}}</span>
@@ -59,7 +59,7 @@
                 {{/iscancelled}}
                 {{! Status: Completed - short date }}
                 {{#iscompleted}}
-                    <span class="task-status task-status-completed small text-muted d-inline-flex">{{completed_on_short}}</span>
+                    <span class="task-status task-status-completed small text-muted d-inline-flex">{{completedonshort}}</span>
                 {{/iscompleted}}
             </span>
         </div>

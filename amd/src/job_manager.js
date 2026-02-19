@@ -147,7 +147,7 @@ define([
         return Ajax.call([{
             methodname: 'block_dixeo_modulegen_update_task',
             args: {
-                queue_id: queueId,
+                queueid: queueId,
                 action: action,
                 cmid: cmid || 0,
                 error: errorMsg || ''
@@ -170,7 +170,7 @@ define([
         activeJobs.delete(queueId);
         return Ajax.call([{
             methodname: 'block_dixeo_modulegen_delete_task',
-            args: {queue_id: queueId}
+            args: {queueid: queueId}
         }])[0].then((result) => {
             if (!result.success) {
                 throw new Error(result.message || 'Failed to remove task');
@@ -191,14 +191,14 @@ define([
         return Ajax.call([{
             methodname: 'local_dixeo_create_module_from_job',
             args: {
-                job_id: jobId,
+                jobid: jobId,
                 courseid: args.courseid,
                 sectionnumber: args.sectionnumber,
                 beforemod: args.beforemod || 0
             }
         }])[0].then((result) => {
             if (!result.success) {
-                const errorMsg = result.error_message || 'Failed to create module';
+                const errorMsg = result.errormessage || 'Failed to create module';
                 updateTask(queueId, 'fail', 0, errorMsg);
                 throw new Error(errorMsg);
             }
@@ -232,7 +232,7 @@ define([
 
         Ajax.call([{
             methodname: 'local_dixeo_get_job_status',
-            args: {job_id: job.jobId}
+            args: {jobid: job.jobId}
         }])[0].then((status) => {
             // Job may have been cancelled while polling.
             if (!activeJobs.has(queueId)) {
@@ -382,11 +382,11 @@ define([
                 const status = parseInt(task.status);
 
                 // STATUS_PROCESSING = 1
-                if (status === 1 && task.job_id) {
+                if (status === 1 && task.jobid) {
                     job.status = 'processing';
-                    job.jobId = task.job_id;
+                    job.jobId = task.jobid;
                     job.attempts = 0;
-                    dispatchJobEvent('processing', {queueId: queueId, jobId: task.job_id});
+                    dispatchJobEvent('processing', {queueId: queueId, jobId: task.jobid});
                     startJobPolling(queueId, false);
                     return;
                 }
@@ -463,9 +463,9 @@ define([
             }
 
             // STATUS_PROCESSING = 1
-            if (status === 1 && task.job_id) {
+            if (status === 1 && task.jobid) {
                 activeJobs.set(queueId, {
-                    jobId: task.job_id,
+                    jobId: task.jobid,
                     status: 'processing',
                     attempts: 0,
                     args: {
@@ -478,7 +478,7 @@ define([
                     timeoutId: null
                 });
 
-                dispatchJobEvent('processing', {queueId: queueId, jobId: task.job_id});
+                dispatchJobEvent('processing', {queueId: queueId, jobId: task.jobid});
                 // Resume immediately - job is already in progress.
                 startJobPolling(queueId, true);
             }
@@ -590,8 +590,8 @@ define([
                     throw new Error(data.error?.message || 'Failed to submit generation');
                 }
 
-                const queueId = data.queue_id;
-                const jobId = data.job_id || null;
+                const queueId = data.queueid;
+                const jobId = data.jobid || null;
                 const status = data.status;
 
                 // Track this job.

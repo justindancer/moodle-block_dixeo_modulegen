@@ -63,14 +63,14 @@ class queue_presenter {
         }
 
         // Display title: use resolved or DB title when available, otherwise "New {MODULETYPE}".
-        $task->display_title = $task->title !== ''
+        $task->displaytitle = $task->title !== ''
             ? $task->title
             : get_string('newmoduletype', 'block_dixeo_modulegen', get_string('modulename', 'mod_' . $modulename));
 
         // Short completion date for completed tasks (e.g. "Completed on 19 Jan 2026, 14:25").
-        $task->completed_on_short = '';
+        $task->completedonshort = '';
         if ((int) $task->status === queue_status::STATUS_COMPLETED && $task->timecompleted > 0) {
-            $task->completed_on_short = get_string(
+            $task->completedonshort = get_string(
                 'completedon',
                 'block_dixeo_modulegen',
                 userdate($task->timecompleted, get_string('strftimedatetimeshort', 'langconfig'))
@@ -83,9 +83,9 @@ class queue_presenter {
         // Select appropriate timestamp for display.
         $task->timestamp = self::get_timestamp_string($task);
 
-        // Include job_id from params for JS polling.
+        // Ensure jobid is populated from params fallback for JS polling when the DB column is empty.
         $params = $task->params ? json_decode($task->params, true) : [];
-        $task->job_id = $task->jobid ?: ($params['job_id'] ?? null);
+        $task->jobid = $task->jobid ?: ($params['jobid'] ?? null);
 
         return $task;
     }

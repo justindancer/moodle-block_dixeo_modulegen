@@ -77,8 +77,8 @@ class queue_service {
             );
 
             return [
-                'queue_id' => $queueid,
-                'job_id' => null,
+                'queueid' => $queueid,
+                'jobid' => null,
                 'status' => 'queued',
             ];
         }
@@ -98,8 +98,8 @@ class queue_service {
         );
 
         return [
-            'queue_id' => $queueid,
-            'job_id' => $result->jobid,
+            'queueid' => $queueid,
+            'jobid' => $result->jobid,
             'status' => 'processing',
         ];
     }
@@ -245,12 +245,12 @@ class queue_service {
                 $task->status = queue_status::STATUS_PROCESSING;
                 $task->jobid = $result->jobid;
                 $task->timestarted = time();
-                self::update_task_params($task, ['job_id' => $result->jobid]);
+                self::update_task_params($task, ['jobid' => $result->jobid]);
                 queue_repository::update($task);
 
                 return [
-                    'queue_id' => (int) $task->id,
-                    'job_id' => $result->jobid,
+                    'queueid' => (int) $task->id,
+                    'jobid' => $result->jobid,
                     'modulename' => $task->modulename,
                     'courseid' => $courseid,
                     'sectionnumber' => $task->sectionnumber,
@@ -308,7 +308,7 @@ class queue_service {
         // Set processing-specific fields when job is already submitted.
         if ($jobid !== null) {
             $record->jobid = $jobid;
-            $record->params = json_encode(['job_id' => $jobid]);
+            $record->params = json_encode(['jobid' => $jobid]);
             $record->timestarted = time();
         }
 

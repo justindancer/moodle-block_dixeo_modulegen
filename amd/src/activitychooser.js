@@ -160,7 +160,7 @@ define([
                 sectionid: caller ? caller.dataset.sectionid : '',
                 origin: origin,
                 config: {wwwroot: M.cfg.wwwroot},
-                generation_title: ''
+                generationtitle: ''
             };
 
             Templates.render('block_dixeo_modulegen/activitychooser', context)

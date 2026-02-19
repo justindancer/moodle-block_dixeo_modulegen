@@ -76,8 +76,8 @@ class api extends external_api {
     private static function create_error_response(string $code, string $message): array {
         return [
             'success' => false,
-            'queue_id' => 0,
-            'job_id' => '',
+            'queueid' => 0,
+            'jobid' => '',
             'status' => 'error',
             'error' => [
                 'code' => $code,
@@ -167,8 +167,8 @@ class api extends external_api {
 
             return [
                 'success' => true,
-                'queue_id' => $result['queue_id'],
-                'job_id' => $result['job_id'] ?? '',
+                'queueid' => $result['queueid'],
+                'jobid' => $result['jobid'] ?? '',
                 'status' => $result['status'],
             ];
 
@@ -188,8 +188,8 @@ class api extends external_api {
     public static function submit_generation_returns(): external_single_structure {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Whether submission succeeded'),
-            'queue_id' => new external_value(PARAM_INT, 'Queue record ID'),
-            'job_id' => new external_value(PARAM_RAW, 'Dixeo job UUID (empty if queued)', VALUE_DEFAULT, ''),
+            'queueid' => new external_value(PARAM_INT, 'Queue record ID'),
+            'jobid' => new external_value(PARAM_RAW, 'Dixeo job UUID (empty if queued)', VALUE_DEFAULT, ''),
             'status' => new external_value(PARAM_TEXT, 'Status: processing, queued, or error'),
             'error' => new external_single_structure([
                 'code' => new external_value(PARAM_TEXT, 'Error code'),
@@ -254,14 +254,13 @@ class api extends external_api {
             'instructions' => new external_value(PARAM_RAW, 'AI instructions', VALUE_OPTIONAL),
             'status' => new external_value(PARAM_INT, 'Status code'),
             'statuslabel' => new external_value(PARAM_TEXT, 'Status label', VALUE_OPTIONAL),
-            'job_id' => new external_value(PARAM_RAW, 'Dixeo job UUID', VALUE_OPTIONAL),
-            'jobid' => new external_value(PARAM_RAW, 'Dixeo job UUID (db field)', VALUE_OPTIONAL),
+            'jobid' => new external_value(PARAM_RAW, 'Dixeo job UUID', VALUE_OPTIONAL),
             'cmid' => new external_value(PARAM_INT, 'Created module ID', VALUE_OPTIONAL),
             'sectionnumber' => new external_value(PARAM_INT, 'Section number', VALUE_OPTIONAL),
             'beforemod' => new external_value(PARAM_INT, 'Insert before module', VALUE_OPTIONAL),
             'link' => new external_value(PARAM_URL, 'Link to created module', VALUE_OPTIONAL),
-            'display_title' => new external_value(PARAM_TEXT, 'Display title (New MODULETYPE or activity title)', VALUE_OPTIONAL),
-            'completed_on_short' => new external_value(PARAM_TEXT, 'Short completion date for completed tasks', VALUE_OPTIONAL),
+            'displaytitle' => new external_value(PARAM_TEXT, 'Display title (New MODULETYPE or activity title)', VALUE_OPTIONAL),
+            'completedonshort' => new external_value(PARAM_TEXT, 'Short completion date for completed tasks', VALUE_OPTIONAL),
             'timestamp' => new external_value(PARAM_TEXT, 'Display timestamp', VALUE_OPTIONAL),
             'timecreated' => new external_value(PARAM_INT, 'Creation time', VALUE_OPTIONAL),
             'timestarted' => new external_value(PARAM_INT, 'Start time', VALUE_OPTIONAL),
@@ -295,7 +294,7 @@ class api extends external_api {
      */
     public static function update_task_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'queue_id' => new external_value(PARAM_INT, 'Queue record ID'),
+            'queueid' => new external_value(PARAM_INT, 'Queue record ID'),
             'action' => new external_value(PARAM_ALPHA, 'Action: complete, fail, or cancel'),
             'cmid' => new external_value(PARAM_INT, 'Created module ID (for complete)', VALUE_DEFAULT, 0),
             'error' => new external_value(PARAM_RAW, 'Error message (for fail)', VALUE_DEFAULT, ''),
@@ -320,14 +319,14 @@ class api extends external_api {
         string $error = ''
     ): array {
         $params = self::validate_parameters(self::update_task_parameters(), [
-            'queue_id' => $queueid,
+            'queueid' => $queueid,
             'action' => $action,
             'cmid' => $cmid,
             'error' => $error,
         ]);
 
         // Get task to verify course access.
-        $task = queue_repository::get_by_id($params['queue_id']);
+        $task = queue_repository::get_by_id($params['queueid']);
         if (!$task) {
             return self::create_update_error_response('Task not found');
         }
@@ -341,15 +340,15 @@ class api extends external_api {
                 if ($params['cmid'] <= 0) {
                     return self::create_update_error_response('cmid required for complete action');
                 }
-                $nexttask = queue_service::complete($params['queue_id'], $params['cmid']);
+                $nexttask = queue_service::complete($params['queueid'], $params['cmid']);
                 break;
 
             case 'fail':
-                $nexttask = queue_service::fail($params['queue_id'], $params['error']);
+                $nexttask = queue_service::fail($params['queueid'], $params['error']);
                 break;
 
             case 'cancel':
-                $success = queue_service::cancel($params['queue_id']);
+                $success = queue_service::cancel($params['queueid']);
                 return [
                     'success' => $success,
                     'message' => $success ? 'Task cancelled' : 'Cannot cancel this task',
@@ -382,8 +381,8 @@ class api extends external_api {
             'success' => new external_value(PARAM_BOOL, 'Whether update succeeded'),
             'message' => new external_value(PARAM_TEXT, 'Result message', VALUE_OPTIONAL),
             'next_task' => new external_single_structure([
-                'queue_id' => new external_value(PARAM_INT, 'Next task queue ID'),
-                'job_id' => new external_value(PARAM_RAW, 'Next task job UUID'),
+                'queueid' => new external_value(PARAM_INT, 'Next task queue ID'),
+                'jobid' => new external_value(PARAM_RAW, 'Next task job UUID'),
                 'modulename' => new external_value(PARAM_TEXT, 'Module type'),
                 'courseid' => new external_value(PARAM_INT, 'Course ID'),
                 'sectionnumber' => new external_value(PARAM_INT, 'Section number', VALUE_OPTIONAL),
@@ -403,7 +402,7 @@ class api extends external_api {
      */
     public static function delete_task_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'queue_id' => new external_value(PARAM_INT, 'Queue record ID'),
+            'queueid' => new external_value(PARAM_INT, 'Queue record ID'),
         ]);
     }
 
@@ -415,17 +414,17 @@ class api extends external_api {
      */
     public static function delete_task(int $queueid): array {
         $params = self::validate_parameters(self::delete_task_parameters(), [
-            'queue_id' => $queueid,
+            'queueid' => $queueid,
         ]);
 
-        $task = queue_repository::get_by_id($params['queue_id']);
+        $task = queue_repository::get_by_id($params['queueid']);
         if (!$task) {
             return ['success' => false, 'message' => 'Task not found'];
         }
 
         self::validate_course_access($task->courseid);
 
-        $success = queue_service::delete($params['queue_id']);
+        $success = queue_service::delete($params['queueid']);
 
         return [
             'success' => $success,
