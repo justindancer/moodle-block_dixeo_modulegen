@@ -16,7 +16,7 @@ $string['dixeo_modulegen:myaddinstance'] = 'Einen Dixeo-Inhaltsgenerator-Block z
 
 $string['aiactivities'] = 'Dixeo-Inhaltsgenerator';
 $string['notavailable'] = 'Dieses Modul ist nicht verfügbar oder nicht richtig konfiguriert. Bitte versuchen Sie es später erneut oder wenden Sie sich an Ihren Administrator.';
-$string['pluginrequired'] = 'Installieren Sie das Plugin {$a}, um diesen Aktivitätstyp zu generieren.';
+$string['pluginrequired'] = 'Installieren Sie das Plugin {$a}, um diesen Aktivitätstyp zu erstellen.';
 
 $string['generate'] = 'Generieren';
 $string['prompt_placeholder'] = 'Bearbeitungsanweisungen für die KI';
@@ -34,7 +34,7 @@ $string['opengeneratorqueue'] = 'Generierungswarteschlange öffnen';
 $string['queue_processor'] = 'Dixeo-Inhaltsgenerierungswarteschlangen-Prozessor';
 $string['queuemodaltitle'] = 'Generierungswarteschlange';
 $string['notasksinthequeue'] = 'Die Aufgabewarteschlange ist derzeit leer.';
-$string['queued'] = 'In Warteschlange';
+$string['queued'] = 'In der Warteschlange';
 $string['processing'] = 'In Bearbeitung';
 $string['completed'] = 'Abgeschlossen';
 $string['activequeued'] = 'Aktiv/In Warteschlange';
@@ -52,7 +52,7 @@ $string['generationfailed'] = 'Generierung fehlgeschlagen';
 $string['generationcancelled'] = 'Generierung abgebrochen';
 $string['generationerror'] = 'Generierungsfehler';
 $string['next'] = 'Weiter';
-$string['newmoduletype'] = 'Neue(s) {$a}';
+$string['newmoduletype'] = 'Neu: {$a}';
 $string['removefromqueue'] = 'Aus Warteschlange entfernen';
 $string['removefromdisplay'] = 'Aus Anzeige entfernen';
 $string['cancelgeneration'] = 'Generierung abbrechen';
