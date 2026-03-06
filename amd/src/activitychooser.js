@@ -27,20 +27,25 @@ define([
     let course = null;
     let categories = null;
 
+    const fallbackIconUrl = M.cfg.wwwroot + '/blocks/dixeo_modulegen/pix/monologo.svg';
+
     /**
      * Get the icon URL for a module type.
+     * If the module is not installed, always use the block fallback to avoid 404s.
      *
      * @param {string} type - The module type (page, label, etc.).
      * @param {string} component - The Moodle component (mod_page, mod_quiz, etc.).
+     * @param {boolean} installed - Whether the module plugin is installed.
      * @returns {string} The icon URL.
      */
-    const getModuleIconUrl = (type, component) => {
-        // Standard Moodle modules use /mod/{type}/pix/monologo.svg
+    const getModuleIconUrl = (type, component, installed) => {
+        if (!installed) {
+            return fallbackIconUrl;
+        }
         if (component && component.startsWith('mod_')) {
             return M.cfg.wwwroot + '/mod/' + type + '/pix/monologo.svg';
         }
-        // Fallback for non-standard modules
-        return M.cfg.wwwroot + '/mod/' + type + '/pix/monologo.svg';
+        return fallbackIconUrl;
     };
 
     /**
@@ -77,7 +82,7 @@ define([
                 shortname: moduleType.type,
                 displayname: moduleType.label || moduleType.type,
                 description: moduleType.description || '',
-                iconurl: getModuleIconUrl(moduleType.type, moduleType.component),
+                iconurl: getModuleIconUrl(moduleType.type, moduleType.component, installed),
                 category: category,
                 installed: installed,
                 component: moduleType.component || ('mod_' + moduleType.type),
