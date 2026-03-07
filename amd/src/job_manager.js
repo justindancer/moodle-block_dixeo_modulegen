@@ -203,9 +203,8 @@ define([
                 throw new Error(errorMsg);
             }
 
-            // Mark complete and potentially start next job.
-            updateTask(queueId, 'complete', result.cmid, '');
-            return {cmid: result.cmid};
+            // Mark task complete on server before resolving, so queue list refresh sees updated status.
+            return updateTask(queueId, 'complete', result.cmid, '').then(() => ({cmid: result.cmid}));
         });
     };
 
