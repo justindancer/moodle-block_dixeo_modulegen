@@ -115,9 +115,10 @@ define([
     /**
      * Fetch module types from the local_dixeo API and transform for UI.
      *
+     * @param {number} courseId - Course id (required for correct language when course forces a locale).
      * @returns {Promise<Object>} Promise resolving to categories structure.
      */
-    const getAvailableModules = async() => {
+    const getAvailableModules = async(courseId) => {
         // Fetch category strings and API data in parallel.
         const [contentStr, resourceStr, assessmentStr, apiResponse] = await Promise.all([
             Str.get_string('category_content', 'block_dixeo_modulegen'),
@@ -125,7 +126,7 @@ define([
             Str.get_string('category_assessment', 'block_dixeo_modulegen'),
             Ajax.call([{
                 methodname: 'local_dixeo_get_module_types',
-                args: {}
+                args: {courseid: courseId}
             }])[0]
         ]);
 
@@ -145,7 +146,7 @@ define([
      * @param {Number} courseId - Course ID to use later on in fetchModules()
      */
     async function init(courseId) {
-        const available = await getAvailableModules();
+        const available = await getAvailableModules(courseId);
 
         course = courseId;
         categories = available.categories;
