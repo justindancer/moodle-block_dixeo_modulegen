@@ -27,6 +27,17 @@ define([
     let course = null;
     let categories = null;
 
+    /** Ensures we only register document-level drop delegation once (covers CMS/sections added after page load). */
+    let courseDropDelegationAttached = false;
+
+    /** @type {HTMLElement|null} Drop target currently showing .dd-drop-down (avoids scanning the whole document each dragover). */
+    let highlightedGenerationDropTarget = null;
+
+    const GENERATION_DRAG_OPTION = '.optionscontainer .optioninfo a[data-target="#generationModal"]';
+    const DROP_HIGHLIGHT_CLASS = 'dd-drop-down';
+    /** Use capture so we run before core course DragDrop, which often stops propagation on activities. */
+    const USE_CAPTURE = true;
+
     const fallbackIconUrl = M.cfg.wwwroot + '/blocks/dixeo_modulegen/pix/monologo.svg';
 
     /**
@@ -172,6 +183,11 @@ define([
             Templates.render('block_dixeo_modulegen/activitychooser', context)
             .then(function(html, js) {
                 const container = block.querySelector('#dixeo-module-generator');
+                if (!container) {
+                    return;
+                }
+
+                initialized = true;
                 container.insertAdjacentHTML('beforeend', html);
 
                 if (js) {
@@ -230,21 +246,41 @@ define([
     }
 
     /**
-     * Adds drag and drop functionality to options and activities.
+     * Resolve the course-module list item or section header under the cursor.
+     * Uses [data-for="section"] so it works across formats (topics, edai, etc.), not only .course-content.
      *
-     * On drop, the function constructs a URL using the dragged option's href, the
-     * section ID of the drop target, and the ID of the next activity (if any), then
-     * navigates to that URL.
+     * @param {EventTarget|null} eventTarget - Event target from drag events.
+     * @returns {HTMLElement|null}
+     */
+    const findGenerationDropTarget = (eventTarget) => {
+        if (!eventTarget || !eventTarget.closest) {
+            return null;
+        }
+        const el = /** @type {HTMLElement} */ (eventTarget);
+        const activity = el.closest('li.activity[data-for="cmitem"]');
+        if (activity && activity.closest('[data-for="section"]')) {
+            return activity;
+        }
+        const sectionTitle = el.closest('[data-for="section_title"]');
+        if (sectionTitle && sectionTitle.closest('[data-for="section"]')) {
+            return sectionTitle;
+        }
+        return null;
+    };
+
+    /**
+     * Wire generation links as drag sources and course sections/activities as drop targets.
+     * On drop, sets data-section-number / data-before-mod on the link and triggers click to open the modal.
      *
      * @param {HTMLElement} block - The activity chooser block element.
      */
-    let addDragAndDrop = function(block) {
+    const addDragAndDrop = function(block) {
         // Mobile devices don't support drag and drop well.
         if (window.innerWidth <= 992) {
             return;
         }
 
-        const options = block.querySelectorAll('.optionscontainer .optioninfo a[data-target="#generationModal"]');
+        const options = block.querySelectorAll(GENERATION_DRAG_OPTION);
         options.forEach(function(option) {
             if (option.classList.contains('disabled')) {
                 return;
@@ -253,8 +289,19 @@ define([
             option.classList.add('draggable');
             option.setAttribute('draggable', 'true');
 
-            option.addEventListener('drag', function() {
+            // Dragstart runs before any dragover; the drag event can fire too late for document delegation.
+            option.addEventListener('dragstart', function(ev) {
                 option.classList.add('dragging');
+                const dt = ev.dataTransfer;
+                if (!dt) {
+                    return;
+                }
+                try {
+                    dt.setData('text/plain', option.getAttribute('data-module-name') || '');
+                    dt.effectAllowed = 'copyMove';
+                } catch (e) {
+                    // DataTransfer#setData may throw in restricted drag contexts.
+                }
             });
 
             option.addEventListener('dragend', function() {
@@ -262,43 +309,72 @@ define([
             });
         });
 
-        const activities = document.querySelectorAll('.course-content div[data-for="section_title"], .course-content .activity');
-        activities.forEach(function(activity) {
-            activity.addEventListener('dragover', function(e) {
-                    const activeOption = block.querySelector('.optioninfo a.dragging');
-                if (activeOption) {
-                    e.preventDefault();
-                    activity.classList.add('dd-drop-down');
-                }
-            });
+        if (courseDropDelegationAttached) {
+            return;
+        }
+        courseDropDelegationAttached = true;
 
-            activity.addEventListener('dragleave', function(e) {
-                    const activeOption = block.querySelector('.optioninfo a.dragging');
-                if (activeOption) {
-                    e.preventDefault();
-                    activity.classList.remove('dd-drop-down');
-                }
-            });
+        const getActiveDragOption = () => block.querySelector('.optioninfo a.dragging');
 
-            activity.addEventListener('drop', function(e) {
-                    const activeOption = block.querySelector('.optioninfo a.dragging');
-                if (activeOption) {
-                    e.preventDefault();
-                    activity.classList.remove('dd-drop-down');
+        const clearDropHighlights = () => {
+            if (highlightedGenerationDropTarget) {
+                highlightedGenerationDropTarget.classList.remove(DROP_HIGHLIGHT_CLASS);
+                highlightedGenerationDropTarget = null;
+            }
+        };
 
-                    const sectionId = activity.closest('.course-section').dataset.sectionid;
-                    let beforeMod = null;
-                    const nextActivity = activity.nextElementSibling;
-                    if (nextActivity) {
-                        beforeMod = nextActivity.dataset.id;
-                    }
+        document.addEventListener('dragover', (e) => {
+            if (!getActiveDragOption()) {
+                return;
+            }
+            const dropEl = findGenerationDropTarget(e.target);
+            if (!dropEl) {
+                clearDropHighlights();
+                return;
+            }
+            e.preventDefault();
+            const dt = e.dataTransfer;
+            if (dt) {
+                dt.dropEffect = 'copy';
+            }
+            if (highlightedGenerationDropTarget !== dropEl) {
+                clearDropHighlights();
+                highlightedGenerationDropTarget = dropEl;
+                dropEl.classList.add(DROP_HIGHLIGHT_CLASS);
+            }
+        }, USE_CAPTURE);
 
-                    activeOption.dataset.sectionNumber = sectionId;
-                    activeOption.dataset.beforeMod = beforeMod;
-                    activeOption.click();
-                }
-            });
-        });
+        document.addEventListener('drop', (e) => {
+            const activeOption = getActiveDragOption();
+            if (!activeOption) {
+                return;
+            }
+            const activity = findGenerationDropTarget(e.target);
+            if (!activity) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            clearDropHighlights();
+
+            const section = activity.closest('[data-for="section"]');
+            if (!section || section.dataset.sectionid === undefined) {
+                return;
+            }
+
+            const sectionId = section.dataset.sectionid;
+            let beforeMod = null;
+            const nextActivity = activity.nextElementSibling;
+            if (nextActivity && nextActivity.dataset && nextActivity.dataset.id) {
+                beforeMod = nextActivity.dataset.id;
+            }
+
+            activeOption.dataset.sectionNumber = sectionId;
+            activeOption.dataset.beforeMod = beforeMod || '';
+            activeOption.click();
+        }, USE_CAPTURE);
+
+        document.addEventListener('dragend', clearDropHighlights);
     };
 
     return {

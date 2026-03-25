@@ -28,12 +28,59 @@ define([
     /** @type {Object|null} Set before opening modal for retry; consumed in handleModalShow. */
     let retryContext = null;
 
+    /** Activities indexed by the course editor but missing native draggable after a partial refresh. */
+    const SELECTOR_CM_NEEDS_DRAG_SYNC = 'li.activity[data-for="cmitem"][data-indexed]:not([draggable="true"])';
+
+    /**
+     * @returns {Promise<void>} Resolves after the next paint (used before scanning the DOM after sectionState).
+     */
+    const nextAnimationFrame = () => new Promise((resolve) => {
+        requestAnimationFrame(resolve);
+    });
+
+    /**
+     * Resolve reactive section id from display section number.
+     *
+     * @param {Object} courseEditor - Moodle course editor instance from core_courseformat/courseeditor.
+     * @param {number|string} sectionNumber
+     * @returns {number|null}
+     */
+    const getSectionIdByNumber = (courseEditor, sectionNumber) => {
+        const num = typeof sectionNumber === 'number' ? sectionNumber : parseInt(sectionNumber, 10);
+        let sectionId = null;
+        courseEditor.state.section.forEach(function(section) {
+            if (section.number === sectionNumber || section.number === num) {
+                sectionId = section.id;
+            }
+        });
+        return sectionId;
+    };
+
+    /**
+     * If any CM is still missing draggable after a partial update, resync the whole course editor state.
+     *
+     * @param {Object} courseEditor - Moodle course editor instance from core_courseformat/courseeditor.
+     * @returns {Promise<void>}
+     */
+    const resyncCourseEditorIfCmDragIncomplete = (courseEditor) => {
+        if (!document.body.classList.contains('editing')) {
+            return Promise.resolve();
+        }
+        return nextAnimationFrame().then(function() {
+            return document.querySelector(SELECTOR_CM_NEEDS_DRAG_SYNC)
+                ? courseEditor.dispatch('courseState')
+                : undefined;
+        });
+    };
+
     /**
      * Refresh the course section to show the newly created module.
      *
      * Uses Moodle's reactive course editor if available (Moodle 4.x+).
+     * After a partial section refresh, some activities can miss the course editor drag setup
+     * (e.g. no draggable on the new li); a conditional full courseState resync fixes that.
      *
-     * @param {number} sectionNumber - The section number to refresh.
+     * @param {number|string} sectionNumber - The section number to refresh.
      */
     const refreshCourseSection = (sectionNumber) => {
         require(['core_courseformat/courseeditor'], function(CourseEditor) {
@@ -43,22 +90,20 @@ define([
                     return;
                 }
 
-                // Find section ID from section number in the state.
-                const state = courseEditor.state;
-                let sectionId = null;
-
-                state.section.forEach(function(section) {
-                    if (section.number === sectionNumber) {
-                        sectionId = section.id;
-                    }
-                });
-
-                if (sectionId) {
-                    // Dispatch sectionState to refresh the section content.
-                    courseEditor.dispatch('sectionState', [sectionId]);
+                const sectionId = getSectionIdByNumber(courseEditor, sectionNumber);
+                if (!sectionId) {
+                    return;
                 }
+
+                courseEditor.dispatch('sectionState', [sectionId])
+                    .then(function() {
+                        return resyncCourseEditorIfCmDragIncomplete(courseEditor);
+                    })
+                    .catch(function() {
+                        // Dispatch/network errors: user can refresh the page.
+                    });
             } catch (e) {
-                // Silently ignore - user can manually refresh.
+                // Resolving the course editor or its state failed.
             }
         });
     };
