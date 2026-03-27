@@ -107,8 +107,8 @@ define([
                         this.blockFooter.setAttribute('title', s);
                     }
                 });
-                // Initial fetch on page load.
-                this.updateQueueStatistics();
+                // Use cache from JobManager.init — avoids duplicate get_queue_status XHR.
+                this.updateQueueStatistics(false);
             }
 
             // Listen for queue data events from job_manager (single source of truth for polling).
@@ -731,14 +731,16 @@ define([
          * Update queue statistics - fetches data and renders.
          * Used for initial load and immediate refreshes triggered by job events.
          * Continuous updates come via job-queue-data events from job_manager.
+         *
+         * @param {boolean} [forceRefresh=true] Pass false on first paint after JobManager.init to reuse its fetch.
          */
-        updateQueueStatistics: function() {
+        updateQueueStatistics: function(forceRefresh = true) {
             if (!this.blockFooter) {
                 return;
             }
 
-            // Fetch fresh data via JobManager (single source of truth).
-            JobManager.getQueueStatus(true).then((data) => {
+            // Fetch via JobManager (single source of truth). Initial load uses false to avoid duplicate XHR.
+            JobManager.getQueueStatus(forceRefresh).then((data) => {
                 this.renderQueueStatistics(data);
             }).catch(async (error) => {
                 const errorTitle = await Str.get_string('error_title', 'block_dixeo_modulegen');
