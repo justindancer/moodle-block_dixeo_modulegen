@@ -61,6 +61,13 @@ $string['viewinstructions'] = 'View instructions';
 $string['noinstructions'] = 'No instructions for this task.';
 $string['retry'] = 'Retry';
 $string['retrygeneration'] = 'Retry generation';
+$string['filltask_defaulttitle'] = 'New activity';
+$string['retry_fill_notfound'] = 'Queue task not found for this course.';
+$string['retry_fill_notfailed'] = 'Only failed tasks can be retried this way.';
+$string['retry_fill_notfill'] = 'This retry applies to fill tasks only.';
+$string['retry_fill_failed'] = 'Module fill did not complete.';
+$string['retry_fill_timeout'] = 'The AI fill job did not complete in time.';
+$string['retry_fill_createfailed'] = 'Could not create the activity from the fill result.';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'Pending';

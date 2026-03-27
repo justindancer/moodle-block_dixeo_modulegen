@@ -6,6 +6,7 @@
  * - submit_generation: Queue a new module generation
  * - get_queue_status: Get tasks and stats for a course
  * - update_task: Complete, fail, or cancel a task
+ * - retry_fill_task: Retry a failed fill-mode queue row
  *
  * @package    block_dixeo_modulegen
  * @copyright  2026 Edunao SAS (contact@edunao.com)
@@ -23,7 +24,11 @@ use core_external\external_value;
 use block_dixeo_modulegen\queue_service;
 use block_dixeo_modulegen\queue_repository;
 use block_dixeo_modulegen\queue_presenter;
+use block_dixeo_modulegen\queue_status;
+use block_dixeo_modulegen\queue_task_mode;
 use local_dixeo\api\exception\api_exception;
+use local_dixeo\external\create_module_from_job;
+use local_dixeo\external\service_factory;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -270,6 +275,7 @@ class api extends external_api {
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'hints' => new external_value(PARAM_RAW, 'Hints', VALUE_OPTIONAL),
             'lang' => new external_value(PARAM_TEXT, 'Language', VALUE_OPTIONAL),
+            'queuemode' => new external_value(PARAM_ALPHA, 'Task mode: generate or fill', VALUE_OPTIONAL),
         ], 'Task record');
 
         $stats = new external_single_structure([
@@ -389,6 +395,197 @@ class api extends external_api {
                 'beforemod' => new external_value(PARAM_INT, 'Insert before module', VALUE_OPTIONAL),
             ], 'Next task that was started', VALUE_OPTIONAL),
         ]);
+    }
+
+    // =========================================================================
+    // retry_fill_task - Retry failed fill-mode row (Dixeo fill_module + create)
+    // =========================================================================
+
+    /**
+     * Parameters for retry_fill_task.
+     *
+     * @return external_function_parameters
+     */
+    public static function retry_fill_task_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'queueid' => new external_value(PARAM_INT, 'Queue record ID'),
+            'courseid' => new external_value(PARAM_INT, 'Course ID (must match task)'),
+        ]);
+    }
+
+    /**
+     * Retry a failed fill task (params.mode = fill).
+     *
+     * @param int $queueid Queue row id.
+     * @param int $courseid Course id.
+     * @return array success, message, cmid
+     */
+    public static function retry_fill_task(int $queueid, int $courseid): array {
+        $params = self::validate_parameters(self::retry_fill_task_parameters(), [
+            'queueid' => $queueid,
+            'courseid' => $courseid,
+        ]);
+
+        $task = queue_repository::get_by_id($params['queueid']);
+        if (!$task || (int) $task->courseid !== $params['courseid']) {
+            return [
+                'success' => false,
+                'message' => get_string('retry_fill_notfound', 'block_dixeo_modulegen'),
+                'cmid' => 0,
+            ];
+        }
+
+        self::validate_course_access($params['courseid']);
+
+        if ((int) $task->status !== queue_status::STATUS_FAILED) {
+            return [
+                'success' => false,
+                'message' => get_string('retry_fill_notfailed', 'block_dixeo_modulegen'),
+                'cmid' => 0,
+            ];
+        }
+        if (!queue_task_mode::is_fill($task->params ?? null)) {
+            return [
+                'success' => false,
+                'message' => get_string('retry_fill_notfill', 'block_dixeo_modulegen'),
+                'cmid' => 0,
+            ];
+        }
+
+        $p = $task->params ? json_decode($task->params, true) : [];
+        $p = is_array($p) ? $p : [];
+        $rawtitle = isset($p['title']) ? trim((string) $p['title']) : trim((string) ($task->title ?? ''));
+        $summary = isset($p['summary']) ? trim((string) $p['summary']) : '';
+        $filldisplay = $rawtitle !== '' ? $rawtitle : get_string('filltask_defaulttitle', 'block_dixeo_modulegen');
+        $nameoverride = $rawtitle !== '' ? $rawtitle : null;
+        $beforemod = !empty($task->beforemod) ? (int) $task->beforemod : null;
+
+        $out = self::run_fill_retry_pipeline(
+            (string) $task->modulename,
+            (string) $task->instructions,
+            (int) $task->courseid,
+            (int) ($task->sectionnumber ?? 0),
+            $beforemod,
+            $filldisplay,
+            $nameoverride,
+            $summary
+        );
+
+        if (!empty($out['success']) && !empty($out['cmid'])) {
+            queue_service::complete_failed_fill_retry(
+                $params['queueid'],
+                (int) $out['cmid'],
+                (string) ($out['fill_jobid'] ?? '')
+            );
+            return [
+                'success' => true,
+                'message' => '',
+                'cmid' => (int) $out['cmid'],
+            ];
+        }
+
+        if (!empty($out['error'])) {
+            queue_service::fail_fill_retry($params['queueid'], (string) $out['error']);
+        }
+
+        return [
+            'success' => false,
+            'message' => !empty($out['error'])
+                ? (string) $out['error']
+                : get_string('retry_fill_failed', 'block_dixeo_modulegen'),
+            'cmid' => 0,
+        ];
+    }
+
+    /**
+     * Return values for retry_fill_task.
+     *
+     * @return external_single_structure
+     */
+    public static function retry_fill_task_returns(): external_single_structure {
+        return new external_single_structure([
+            'success' => new external_value(PARAM_BOOL, 'Whether fill succeeded'),
+            'message' => new external_value(PARAM_RAW, 'Error or empty', VALUE_DEFAULT, ''),
+            'cmid' => new external_value(PARAM_INT, 'Created course module id on success'),
+        ]);
+    }
+
+    /**
+     * Run fill_module job, wait, create activity (used for fill retry only).
+     *
+     * @return array{success: bool, cmid: int, error: string, fill_jobid: string}
+     */
+    private static function run_fill_retry_pipeline(
+        string $modulename,
+        string $instructions,
+        int $courseid,
+        int $sectionnumber,
+        ?int $beforemod,
+        string $filldisplaytitle,
+        ?string $nameoverride,
+        string $summaryraw
+    ): array {
+        $moduleservice = service_factory::get_module_generation_service();
+        $jobservice = service_factory::get_job_service();
+        $filljobid = '';
+        try {
+            $operation = $moduleservice->submit_fill_job_for_course(
+                $modulename,
+                $instructions,
+                $courseid,
+                $sectionnumber,
+                $filldisplaytitle,
+                $summaryraw
+            );
+            $filljobid = (string) ($operation->jobid ?? '');
+
+            $waitResult = $jobservice->wait_for_job($operation->jobid, 'fill_module');
+            if (!$waitResult->is_completed()) {
+                return [
+                    'success' => false,
+                    'cmid' => 0,
+                    'error' => get_string('retry_fill_timeout', 'block_dixeo_modulegen'),
+                    'fill_jobid' => $filljobid,
+                ];
+            }
+
+            $introoverride = $summaryraw !== '' ? format_text($summaryraw, FORMAT_PLAIN) : null;
+
+            $result = create_module_from_job::execute(
+                $operation->jobid,
+                $courseid,
+                $sectionnumber,
+                $beforemod,
+                $nameoverride,
+                $introoverride
+            );
+
+            if (empty($result['success'])) {
+                $errmsg = !empty($result['errormessage'])
+                    ? (string) $result['errormessage']
+                    : get_string('retry_fill_createfailed', 'block_dixeo_modulegen');
+                return [
+                    'success' => false,
+                    'cmid' => 0,
+                    'error' => $errmsg,
+                    'fill_jobid' => $filljobid,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'cmid' => (int) ($result['cmid'] ?? 0),
+                'error' => '',
+                'fill_jobid' => $filljobid,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'cmid' => 0,
+                'error' => $e->getMessage(),
+                'fill_jobid' => $filljobid,
+            ];
+        }
     }
 
     // =========================================================================

@@ -86,6 +86,7 @@ class queue_presenter {
         // Ensure jobid is populated from params fallback for JS polling when the DB column is empty.
         $params = $task->params ? json_decode($task->params, true) : [];
         $task->jobid = $task->jobid ?: ($params['jobid'] ?? null);
+        $task->queuemode = queue_task_mode::from_params($task->params ?? null);
 
         return $task;
     }

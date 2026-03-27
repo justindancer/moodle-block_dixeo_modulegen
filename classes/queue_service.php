@@ -233,6 +233,17 @@ class queue_service {
                 return null;
             }
 
+            // Fill-mode rows are terminal logs only; never run through the generate API.
+            if (queue_task_mode::is_fill($task->params ?? null)) {
+                $task->status = queue_status::STATUS_FAILED;
+                $task->timecompleted = time();
+                self::update_task_params($task, [
+                    'error' => 'Invalid queue state: fill tasks cannot be pending.',
+                ]);
+                queue_repository::update($task);
+                continue;
+            }
+
             try {
                 $result = self::submit_to_api(
                     $task->modulename,
@@ -371,5 +382,147 @@ class queue_service {
         $params = $task->params ? json_decode($task->params, true) : [];
         $params = array_merge($params, $updates);
         $task->params = json_encode($params);
+    }
+
+    /**
+     * Insert a completed fill log row (terminal; does not start queue processing).
+     *
+     * @param int|null $beforemod Insert-before cm id or null.
+     */
+    public static function log_fill_completed(
+        int $courseid,
+        string $modulename,
+        string $instructions,
+        int $sectionnumber,
+        ?int $beforemod,
+        int $cmid,
+        string $displaytitle,
+        string $summaryraw,
+        string $filljobid
+    ): int {
+        $lang = current_language();
+        $record = queue_repository::create_base_record(
+            $courseid,
+            $modulename,
+            $instructions,
+            $sectionnumber,
+            $beforemod,
+            $lang
+        );
+        $record->title = clean_param($displaytitle, PARAM_TEXT);
+        $record->status = queue_status::STATUS_COMPLETED;
+        $record->cmid = $cmid;
+        $jobid = $filljobid !== '' ? $filljobid : \core\uuid::generate();
+        $record->jobid = $jobid;
+        $record->timecompleted = time();
+        $record->params = json_encode(self::fill_params_payload(
+            $displaytitle,
+            $summaryraw,
+            $jobid,
+            null
+        ));
+        return queue_repository::insert($record);
+    }
+
+    /**
+     * Insert a failed fill log row (retryable from modulegen UI).
+     */
+    public static function log_fill_failed(
+        int $courseid,
+        string $modulename,
+        string $instructions,
+        int $sectionnumber,
+        ?int $beforemod,
+        string $displaytitle,
+        string $summaryraw,
+        string $filljobid,
+        string $errormessage
+    ): int {
+        $lang = current_language();
+        $record = queue_repository::create_base_record(
+            $courseid,
+            $modulename,
+            $instructions,
+            $sectionnumber,
+            $beforemod,
+            $lang
+        );
+        $record->title = clean_param($displaytitle, PARAM_TEXT);
+        $record->status = queue_status::STATUS_FAILED;
+        $record->cmid = 0;
+        $jobid = $filljobid !== '' ? $filljobid : \core\uuid::generate();
+        $record->jobid = $jobid;
+        $record->timecompleted = time();
+        $record->params = json_encode(self::fill_params_payload(
+            $displaytitle,
+            $summaryraw,
+            $filljobid !== '' ? $filljobid : $jobid,
+            $errormessage
+        ));
+        return queue_repository::insert($record);
+    }
+
+    /**
+     * Mark a failed fill row completed after successful retry.
+     */
+    public static function complete_failed_fill_retry(int $queueid, int $cmid, string $filljobid = ''): bool {
+        $task = queue_repository::get_by_id($queueid);
+        if (!$task || (int) $task->status !== queue_status::STATUS_FAILED) {
+            return false;
+        }
+        if (!queue_task_mode::is_fill($task->params)) {
+            return false;
+        }
+        $params = $task->params ? json_decode($task->params, true) : [];
+        if (!is_array($params)) {
+            $params = [];
+        }
+        unset($params['error']);
+        if ($filljobid !== '') {
+            $params['dixeo_jobid'] = $filljobid;
+            $task->jobid = $filljobid;
+        }
+        $task->params = json_encode($params);
+        $task->status = queue_status::STATUS_COMPLETED;
+        $task->cmid = $cmid;
+        $task->timecompleted = time();
+        return queue_repository::update($task);
+    }
+
+    /**
+     * Refresh error text on a failed fill row after a failed retry.
+     */
+    public static function fail_fill_retry(int $queueid, string $error): bool {
+        $task = queue_repository::get_by_id($queueid);
+        if (!$task || (int) $task->status !== queue_status::STATUS_FAILED) {
+            return false;
+        }
+        if (!queue_task_mode::is_fill($task->params)) {
+            return false;
+        }
+        self::update_task_params($task, ['error' => $error]);
+        $task->timecompleted = time();
+        return queue_repository::update($task);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function fill_params_payload(
+        string $title,
+        string $summary,
+        string $dixeojobid,
+        ?string $error
+    ): array {
+        $p = [
+            'mode' => queue_task_mode::MODE_FILL,
+            'title' => $title,
+            'summary' => $summary,
+            'dixeo_jobid' => $dixeojobid,
+        ];
+        if ($error !== null && $error !== '') {
+            $p['error'] = $error;
+        }
+        return $p;
     }
 }

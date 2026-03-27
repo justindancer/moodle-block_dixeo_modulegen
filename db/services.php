@@ -50,4 +50,13 @@ $functions = [
         'ajax' => true,
         'capabilities' => 'moodle/course:manageactivities',
     ],
+
+    'block_dixeo_modulegen_retry_fill_task' => [
+        'classname' => 'block_dixeo_modulegen\external\api',
+        'methodname' => 'retry_fill_task',
+        'description' => 'Retry a failed fill-mode queue row (fill_module pipeline)',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'moodle/course:manageactivities',
+    ],
 ];

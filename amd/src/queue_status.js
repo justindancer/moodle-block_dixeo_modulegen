@@ -25,8 +25,9 @@ define([
     'core/str',
     'core/templates',
     'core/notification',
+    'core/ajax',
     'block_dixeo_modulegen/job_manager'
-], function($, Str, Templates, Notification, JobManager) {
+], function($, Str, Templates, Notification, Ajax, JobManager) {
     'use strict';
 
     return {
@@ -539,6 +540,11 @@ define([
          */
         handleRetryClick: function(e, link) {
             e.preventDefault();
+            const mode = link.getAttribute('data-queue-mode') || 'generate';
+            if (mode === 'fill') {
+                this.handleFillRetryTask(link);
+                return;
+            }
             const taskItem = link.closest('.task-item');
             if (!taskItem) {
                 return;
@@ -555,6 +561,47 @@ define([
                     courseid: link.getAttribute('data-courseid') || ''
                 }
             }));
+        },
+
+        /**
+         * Retry a fill-mode queue row via modulegen web service (no generation modal).
+         *
+         * @param {Element} link - Retry control.
+         */
+        handleFillRetryTask: function(link) {
+            const queueId = parseInt(link.getAttribute('data-task-id'), 10);
+            const courseId = parseInt(link.getAttribute('data-courseid'), 10) || parseInt(this.courseId, 10);
+            if (!queueId || !courseId) {
+                return;
+            }
+            const originalText = link.textContent;
+            link.style.pointerEvents = 'none';
+            Str.get_string('processing', 'block_dixeo_modulegen').then((processingLabel) => {
+                link.textContent = processingLabel + '…';
+                return Ajax.call([{
+                    methodname: 'block_dixeo_modulegen_retry_fill_task',
+                    args: {
+                        queueid: queueId,
+                        courseid: courseId
+                    }
+                }])[0];
+            }).then((data) => {
+                link.style.pointerEvents = '';
+                link.textContent = originalText;
+                if (!data || !data.success) {
+                    const msg = (data && data.message) ? data.message : '';
+                    return Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
+                        Notification.alert(title, msg || String(title));
+                    });
+                }
+                this.updateQueueStatistics();
+                this.updateQueueList();
+                return null;
+            }).catch((error) => {
+                link.style.pointerEvents = '';
+                link.textContent = originalText;
+                Notification.exception(error);
+            });
         },
 
         /**
