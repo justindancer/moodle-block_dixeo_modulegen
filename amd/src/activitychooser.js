@@ -30,11 +30,12 @@ define([
     /** Ensures we only register document-level drop delegation once (covers CMS/sections added after page load). */
     let courseDropDelegationAttached = false;
 
-    /** @type {HTMLElement|null} Drop target currently showing .dd-drop-down (avoids scanning the whole document each dragover). */
+    /** @type {HTMLElement|null} Drop target currently showing drop highlight classes (avoids scanning each dragover). */
     let highlightedGenerationDropTarget = null;
 
     const GENERATION_DRAG_OPTION = '.optionscontainer .optioninfo a[data-target="#generationModal"]';
-    const DROP_HIGHLIGHT_CLASS = 'dd-drop-down';
+    /** Legacy Moodle-style name + block-specific hook for theme/format overrides without .course-content. */
+    const DROP_HIGHLIGHT_CLASSES = ['dd-drop-down', 'dixeo-modulegen-drop-target'];
     /** Use capture so we run before core course DragDrop, which often stops propagation on activities. */
     const USE_CAPTURE = true;
 
@@ -318,7 +319,7 @@ define([
 
         const clearDropHighlights = () => {
             if (highlightedGenerationDropTarget) {
-                highlightedGenerationDropTarget.classList.remove(DROP_HIGHLIGHT_CLASS);
+                DROP_HIGHLIGHT_CLASSES.forEach((c) => highlightedGenerationDropTarget.classList.remove(c));
                 highlightedGenerationDropTarget = null;
             }
         };
@@ -340,7 +341,7 @@ define([
             if (highlightedGenerationDropTarget !== dropEl) {
                 clearDropHighlights();
                 highlightedGenerationDropTarget = dropEl;
-                dropEl.classList.add(DROP_HIGHLIGHT_CLASS);
+                DROP_HIGHLIGHT_CLASSES.forEach((c) => dropEl.classList.add(c));
             }
         }, USE_CAPTURE);
 

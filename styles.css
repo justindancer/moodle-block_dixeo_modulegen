@@ -24,7 +24,7 @@
  *   4. Queue (expanded panel, header, filters, task list)
  *   5. Activity chooser (options, categories, drag-drop)
  *   6. Generation modal (body bg: --dixeo-modulegen-modal-body-bg)
- *   7. Context overrides (editing mode, course view)
+ *   7. Context overrides (editing mode, course view, drop-target highlight on cm items)
  *   8. Media queries
  */
 
@@ -632,10 +632,22 @@
    7. CONTEXT OVERRIDES
    ========================================================================== */
 
-/* Drag-drop target in course view (outside block) */
-.course-content .dd-drop-down {
-    border-bottom: 1px solid var(--dixeo-modulegen-border-dark);
-    margin-bottom: -1px;
+/*
+ * Module generator drop highlight: no .course-content ancestor required (topics, Boost, section.php, etc.).
+ * .dd-drop-down kept for back-compat with cached JS; .dixeo-modulegen-drop-target is the stable hook.
+ * Override tokens on .dixeo-modulegen-drop-target (or these selectors) from a theme or format SCSS.
+ */
+li.activity[data-for="cmitem"].dixeo-modulegen-drop-target,
+[data-for="section_title"].dixeo-modulegen-drop-target,
+li.activity[data-for="cmitem"].dd-drop-down,
+[data-for="section_title"].dd-drop-down {
+    --dixeo-modulegen-drop-line-width: 3px;
+    --dixeo-modulegen-drop-line-style: dashed;
+    /* Boost / modern themes expose --primary; fallback matches Moodle default blue */
+    --dixeo-modulegen-drop-line-color: var(--primary, #0f6cbf);
+    border-bottom: var(--dixeo-modulegen-drop-line-width) var(--dixeo-modulegen-drop-line-style)
+        var(--dixeo-modulegen-drop-line-color);
+    margin-bottom: calc(-1 * var(--dixeo-modulegen-drop-line-width));
 }
 
 .editing .block_dixeo_modulegen > .card-body > .card-text {
