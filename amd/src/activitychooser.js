@@ -36,6 +36,10 @@ define([
     const GENERATION_DRAG_OPTION = '.optionscontainer .optioninfo a[data-target="#generationModal"]';
     /** Legacy Moodle-style name + block-specific hook for theme/format overrides without .course-content. */
     const DROP_HIGHLIGHT_CLASSES = ['dd-drop-down', 'dixeo-modulegen-drop-target'];
+    /** Injected before the first cm in each section list; insert-before = first cm id. */
+    const SECTION_LEAD_DROP = 'section-lead-drop';
+    const SELECTOR_SECTION_LEAD_DROP = '[data-dixeo-modulegen="' + SECTION_LEAD_DROP + '"]';
+    const SCOPED_SECTION_LEAD_DROP = ':scope > ' + SELECTOR_SECTION_LEAD_DROP;
     /** Use capture so we run before core course DragDrop, which often stops propagation on activities. */
     const USE_CAPTURE = true;
 
@@ -258,6 +262,10 @@ define([
             return null;
         }
         const el = /** @type {HTMLElement} */ (eventTarget);
+        const leadDrop = el.closest(SELECTOR_SECTION_LEAD_DROP);
+        if (leadDrop && leadDrop.closest('[data-for="section"]')) {
+            return leadDrop;
+        }
         const activity = el.closest('li.activity[data-for="cmitem"]');
         if (activity && activity.closest('[data-for="section"]')) {
             return activity;
@@ -315,6 +323,66 @@ define([
         }
         courseDropDelegationAttached = true;
 
+        /**
+         * Remove lead-drop zones when they no longer sit before a cm item (partial DOM refresh).
+         */
+        const removeOrphanSectionLeadDrops = () => {
+            document.querySelectorAll(SELECTOR_SECTION_LEAD_DROP).forEach((zone) => {
+                const next = zone.nextElementSibling;
+                if (!next || !next.matches || !next.matches('li.activity[data-for="cmitem"]')) {
+                    zone.remove();
+                }
+            });
+        };
+
+        /**
+         * Place one droppable strip before the first activity in each cmlist (view and editing).
+         */
+        const syncSectionLeadDropzones = () => {
+            removeOrphanSectionLeadDrops();
+            document.querySelectorAll('[data-for="section"] ul[data-for="cmlist"]').forEach((ul) => {
+                const firstCm = ul.querySelector(':scope > li.activity[data-for="cmitem"]');
+                if (!firstCm) {
+                    return;
+                }
+                let zone = ul.querySelector(SCOPED_SECTION_LEAD_DROP);
+                if (!zone) {
+                    zone = /** @type {HTMLLIElement} */ (document.createElement('li'));
+                    zone.setAttribute('data-dixeo-modulegen', SECTION_LEAD_DROP);
+                    zone.className = 'dixeo-modulegen-section-lead-drop';
+                    zone.setAttribute('aria-hidden', 'true');
+                    firstCm.before(zone);
+                } else if (zone.nextElementSibling !== firstCm) {
+                    firstCm.before(zone);
+                }
+            });
+            document.querySelectorAll('[data-for="section"] ul[data-for="cmlist"]').forEach((ul) => {
+                const zones = ul.querySelectorAll(SCOPED_SECTION_LEAD_DROP);
+                for (let i = 1; i < zones.length; i++) {
+                    zones[i].remove();
+                }
+            });
+        };
+
+        let leadDropSyncTimer = null;
+        const scheduleSyncSectionLeadDropzones = () => {
+            if (leadDropSyncTimer !== null) {
+                return;
+            }
+            leadDropSyncTimer = window.setTimeout(() => {
+                leadDropSyncTimer = null;
+                syncSectionLeadDropzones();
+            }, 120);
+        };
+
+        syncSectionLeadDropzones();
+        const leadDropObserverRoot = document.querySelector('#region-main') || document.body;
+        const leadDropObserver = new MutationObserver(() => scheduleSyncSectionLeadDropzones());
+        leadDropObserver.observe(leadDropObserverRoot, {childList: true, subtree: true});
+        const bodyClassObserver = new MutationObserver(() => syncSectionLeadDropzones());
+        bodyClassObserver.observe(document.body, {attributes: true, attributeFilter: ['class']});
+        document.addEventListener('job-completed', scheduleSyncSectionLeadDropzones);
+
         const getActiveDragOption = () => block.querySelector('.optioninfo a.dragging');
 
         const clearDropHighlights = () => {
@@ -365,9 +433,17 @@ define([
 
             const sectionId = section.dataset.sectionid;
             let beforeMod = null;
-            const nextActivity = activity.nextElementSibling;
-            if (nextActivity && nextActivity.dataset && nextActivity.dataset.id) {
-                beforeMod = nextActivity.dataset.id;
+            if (activity.getAttribute('data-dixeo-modulegen') === SECTION_LEAD_DROP) {
+                const firstCm = activity.nextElementSibling;
+                if (!firstCm || !firstCm.dataset || !firstCm.dataset.id) {
+                    return;
+                }
+                beforeMod = firstCm.dataset.id;
+            } else {
+                const nextActivity = activity.nextElementSibling;
+                if (nextActivity && nextActivity.dataset && nextActivity.dataset.id) {
+                    beforeMod = nextActivity.dataset.id;
+                }
             }
 
             activeOption.dataset.sectionNumber = sectionId;

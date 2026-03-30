@@ -650,6 +650,36 @@ li.activity[data-for="cmitem"].dd-drop-down,
     margin-bottom: calc(-1 * var(--dixeo-modulegen-drop-line-width));
 }
 
+/*
+ * First-slot placeholder only (inside course cmlist): empty li’s bottom border is covered by the
+ * first activity card — draw border-top on the adjacent cm. Scoped to ul[data-for="cmlist"] so
+ * other drop highlights are unchanged.
+ */
+ul[data-for="cmlist"] > li.dixeo-modulegen-section-lead-drop.dixeo-modulegen-drop-target,
+ul[data-for="cmlist"] > li.dixeo-modulegen-section-lead-drop.dd-drop-down {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+ul[data-for="cmlist"] > li.dixeo-modulegen-section-lead-drop.dixeo-modulegen-drop-target + li.activity[data-for="cmitem"],
+ul[data-for="cmlist"] > li.dixeo-modulegen-section-lead-drop.dd-drop-down + li.activity[data-for="cmitem"] {
+    --dixeo-modulegen-drop-line-width: 3px;
+    --dixeo-modulegen-drop-line-style: dashed;
+    --dixeo-modulegen-drop-line-color: var(--primary, #0f6cbf);
+    border-top: var(--dixeo-modulegen-drop-line-width) var(--dixeo-modulegen-drop-line-style)
+        var(--dixeo-modulegen-drop-line-color);
+    margin-top: calc(-1 * var(--dixeo-modulegen-drop-line-width));
+}
+
+/* First-slot drop target: larger hit area above first cm. */
+ul[data-for="cmlist"] > li.dixeo-modulegen-section-lead-drop {
+    list-style: none;
+    min-height: 28px;
+    margin: 0;
+    padding: 4px 0;
+    box-sizing: border-box;
+}
+
 .editing .block_dixeo_modulegen > .card-body > .card-text {
     display: block;
     margin-top: 25px !important;
