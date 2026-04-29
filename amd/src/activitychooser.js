@@ -31,6 +31,15 @@ define([
     /** Ensures we only register document-level drop delegation once (covers CMS/sections added after page load). */
     let courseDropDelegationAttached = false;
 
+    /**
+     * True when the page has core course-format activity lists (not formats that replace them entirely).
+     *
+     * @returns {boolean}
+     */
+    function hasStandardCourseModuleList() {
+        return !!document.querySelector('[data-for="section"] ul[data-for="cmlist"]');
+    }
+
     /** @type {HTMLElement|null} Drop target currently showing drop highlight classes (avoids scanning each dragover). */
     let highlightedGenerationDropTarget = null;
 
@@ -201,7 +210,9 @@ define([
                 }
 
                 registerCategoryToggles(block);
-                addDragAndDrop(block);
+                if (hasStandardCourseModuleList()) {
+                    addDragAndDrop(block);
+                }
 
                 // Initialize job manager FIRST - it handles all job lifecycle.
                 // This must complete before other modules try to submit/poll jobs.

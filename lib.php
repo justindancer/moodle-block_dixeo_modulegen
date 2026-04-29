@@ -25,6 +25,30 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Whether the Dixeo module generator block is added to the given course (any instance in course context).
+ *
+ * @param int $courseid Course id.
+ * @return bool
+ */
+function block_dixeo_modulegen_course_has_block(int $courseid): bool {
+    global $DB;
+
+    if ($courseid <= 0) {
+        return false;
+    }
+
+    $context = \context_course::instance($courseid, IGNORE_MISSING);
+    if (!$context) {
+        return false;
+    }
+
+    return $DB->record_exists('block_instances', [
+        'blockname' => 'dixeo_modulegen',
+        'parentcontextid' => $context->id,
+    ]);
+}
+
+/**
  * Dixeo teacher toolbar: open the module generator sidebar (same capability as the block).
  *
  * @param \moodle_page $page
@@ -48,6 +72,10 @@ function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page)
         return [];
     }
 
+    if (!block_dixeo_modulegen_course_has_block((int) $page->course->id)) {
+        return [];
+    }
+
     if ($page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
         $page->requires->css('/blocks/dixeo_modulegen/styles.css');
         $page->requires->js_call_amd('block_dixeo_modulegen/activitychooser', 'init', [$page->course->id]);
@@ -61,7 +89,7 @@ function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page)
         'label' => $label,
         'title' => $label,
         'dataaction' => 'open-dixeo-generator',
-        'controls' => 'dixeo-generator-panel',
+        'controls' => 'dixeo-module-generator',
         'ismobileprimary' => true,
         'isaccent' => true,
         'islink' => false,
