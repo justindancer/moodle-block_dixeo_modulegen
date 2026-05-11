@@ -34,6 +34,9 @@ defined('MOODLE_INTERNAL') || die();
  */
 class queue_presenter {
 
+    /** @var array<string, array>|null Per-request memo of type rows indexed by type identifier. */
+    private static ?array $typeindex = null;
+
     /**
      * Format a single task record for display.
      *
@@ -44,11 +47,15 @@ class queue_presenter {
      */
     public static function format_task(object $task): object {
         $modulename = $task->modulename;
+        $row = self::find_type_row($modulename);
+        $modplugin = (isset($row['component']) && strpos($row['component'], 'mod_') === 0)
+            ? substr($row['component'], 4)
+            : $modulename;
 
         // Build the view link for completed modules.
         $task->link = null;
         if ((int) $task->status === queue_status::STATUS_COMPLETED && $task->cmid) {
-            $task->link = (new \moodle_url('/mod/' . $modulename . '/view.php', [
+            $task->link = (new \moodle_url('/mod/' . $modplugin . '/view.php', [
                 'id' => $task->cmid,
             ]))->out(false);
         }
@@ -63,9 +70,17 @@ class queue_presenter {
         }
 
         // Display title: use resolved or DB title when available, otherwise "New {MODULETYPE}".
-        $task->displaytitle = $task->title !== ''
-            ? $task->title
-            : get_string('newmoduletype', 'block_dixeo_modulegen', get_string('modulename', 'mod_' . $modulename));
+        // For variants that share their Moodle plugin (all H5P types → mod_h5pactivity),
+        // prefix the title with the variant label so the queue distinguishes them — the
+        // shared icon alone can't.
+        $label = isset($row['label']) ? (string) $row['label'] : $modulename;
+        if ($task->title !== '' && self::is_shared_component_variant($row)) {
+            $task->displaytitle = $label . ' · ' . $task->title;
+        } else {
+            $task->displaytitle = $task->title !== ''
+                ? $task->title
+                : get_string('newmoduletype', 'block_dixeo_modulegen', $label);
+        }
 
         // Short completion date for completed tasks (e.g. "Completed on 19 Jan 2026, 14:25").
         $task->completedonshort = '';
@@ -103,6 +118,64 @@ class queue_presenter {
             $results[] = self::format_task($task);
         }
         return $results;
+    }
+
+    /**
+     * Whether the row's Moodle plugin is shared by multiple Dixeo types.
+     *
+     * True for H5P variants (every h5p_* type maps to mod_h5pactivity); false for
+     * 1:1 types like page/glossary/quiz where the icon alone identifies the kind.
+     */
+    private static function is_shared_component_variant(?array $row): bool {
+        if ($row === null || empty($row['component'])) {
+            return false;
+        }
+        $component = (string) $row['component'];
+        $count = 0;
+        foreach (self::get_catalogue() as $other) {
+            if (($other['component'] ?? null) === $component) {
+                $count++;
+                if ($count > 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Resolved Dixeo type catalogue indexed by type identifier — per-request memo.
+     *
+     * Returns null per row when the API is unreachable; callers fall back to the bare type name.
+     *
+     * @return array|null The row for the given type, or null.
+     */
+    private static function find_type_row(string $modulename): ?array {
+        return self::get_catalogue()[$modulename] ?? null;
+    }
+
+    /**
+     * Resolved Dixeo type catalogue indexed by type identifier — per-request memo.
+     *
+     * Empty when the API is unreachable; callers must handle missing rows.
+     *
+     * @return array<string, array>
+     */
+    private static function get_catalogue(): array {
+        if (self::$typeindex === null) {
+            self::$typeindex = [];
+            try {
+                $types = \local_dixeo\external\service_factory::get_module_types_service()->get_module_types_resolved();
+                foreach ($types as $row) {
+                    if (is_array($row) && !empty($row['type'])) {
+                        self::$typeindex[(string) $row['type']] = $row;
+                    }
+                }
+            } catch (\Throwable $e) {
+                self::$typeindex = [];
+            }
+        }
+        return self::$typeindex;
     }
 
     /**

@@ -69,7 +69,7 @@ define([
             return fallbackIconUrl;
         }
         if (component && component.startsWith('mod_')) {
-            return M.cfg.wwwroot + '/mod/' + type + '/pix/monologo.svg';
+            return M.cfg.wwwroot + '/mod/' + component.substring('mod_'.length) + '/pix/monologo.svg';
         }
         return fallbackIconUrl;
     };
@@ -122,8 +122,8 @@ define([
             categoryMap[category].items.push(item);
         });
 
-        // Convert to array, keeping a consistent order (content first, then others, assessment last).
-        const order = ['content', 'resource', 'collaboration', 'communication', 'assessment'];
+        // Convert to array, keeping a consistent order (content first, then assessment, interactive last).
+        const order = ['content', 'resource', 'collaboration', 'communication', 'assessment', 'interactive'];
         const categoriesArray = order
             .filter(cat => categoryMap[cat])
             .map(cat => categoryMap[cat]);
@@ -146,9 +146,10 @@ define([
      */
     const getAvailableModules = async(courseId) => {
         // Fetch category strings and API data in parallel.
-        const [contentStr, resourceStr, assessmentStr, apiResponse] = await Promise.all([
+        const [contentStr, resourceStr, interactiveStr, assessmentStr, apiResponse] = await Promise.all([
             Str.get_string('category_content', 'block_dixeo_modulegen'),
             Str.get_string('category_resource', 'block_dixeo_modulegen'),
+            Str.get_string('category_interactive', 'block_dixeo_modulegen'),
             Str.get_string('category_assessment', 'block_dixeo_modulegen'),
             Ajax.call([{
                 methodname: 'local_dixeo_get_module_types',
@@ -159,6 +160,7 @@ define([
         const categoryStrings = {
             content: contentStr,
             resource: resourceStr,
+            interactive: interactiveStr,
             assessment: assessmentStr
         };
 
