@@ -186,12 +186,11 @@ define([
 
         const block = document.querySelector('.block_dixeo_modulegen');
         if (block) {
-            const caller = document.querySelector('.course-section[data-sectionid]:last-of-type');
             let origin = window.location.pathname.includes('/course/section.php') ? 'section' : 'view';
             const context = {
                 courseid: course,
                 categories: categories,
-                sectionid: caller ? caller.dataset.sectionid : '',
+                sectionid: findLastSectionId(),
                 origin: origin,
                 config: {wwwroot: M.cfg.wwwroot},
                 generationtitle: ''
@@ -263,6 +262,22 @@ define([
             btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
         });
     }
+
+    /**
+     * Find the last section number on the page.
+     *
+     * @returns {string} The last section number as string, or '0' if none found.
+     */
+    const findLastSectionId = () => {
+        const sections = document.querySelectorAll('[data-for="section"][data-sectionid]');
+        for (let i = sections.length - 1; i >= 0; i--) {
+            const num = parseInt(sections[i].dataset.sectionid, 10);
+            if (Number.isFinite(num) && num > 0) {
+                return String(num);
+            }
+        }
+        return '0';
+    };
 
     /**
      * Resolve the course-module list item or section header under the cursor.
