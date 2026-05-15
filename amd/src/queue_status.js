@@ -47,6 +47,9 @@ define([
         /** @var {boolean} isExpanded - Whether the queue is currently expanded. */
         isExpanded: false,
 
+        /** @var {boolean} queueAnimatePending - True while expand positions panel; updateQueueList must not reveal early. */
+        queueAnimatePending: false,
+
         /** @var {number|null} elapsedInterval - Interval ID for elapsed time updates. */
         elapsedInterval: null,
 
@@ -192,6 +195,71 @@ define([
         },
 
         /**
+         * Lock or unlock vertical scroll on the generator card while the queue panel opens/closes.
+         *
+         * @param {boolean} locked - When true, clip overflow so the off-screen panel does not show a scrollbar.
+         */
+        setGeneratorScrollLock: function(locked) {
+            const generator = document.querySelector('#dixeo-module-generator');
+            if (!generator) {
+                return;
+            }
+            generator.classList.toggle('queue-panel-opening', locked);
+        },
+
+        /**
+         * Position the expanded queue overlay between the card top and the footer.
+         */
+        positionQueueContainer: function() {
+            if (!this.queueContainer || !this.blockFooter) {
+                return;
+            }
+            const footerHeight = this.blockFooter.offsetHeight;
+            this.queueContainer.style.top = '0';
+            this.queueContainer.style.bottom = `${footerHeight}px`;
+            this.queueContainer.style.zIndex = '998';
+        },
+
+        /** @const {number} Queue panel slide transition (ms); must match CSS. */
+        queuePanelTransitionMs: 300,
+
+        /**
+         * Slide the queue panel in after content is rendered (two rAF frames so CSS transition runs).
+         *
+         * @returns {Promise<void>}
+         */
+        animateQueuePanelIn: function() {
+            return new Promise((resolve) => {
+                requestAnimationFrame(() => {
+                    if (!this.queueContainer) {
+                        resolve();
+                        return;
+                    }
+                    this.positionQueueContainer();
+                    this.queueContainer.style.transition = '';
+                    this.queueContainer.style.visibility = 'visible';
+                    this.queueContainer.style.pointerEvents = 'auto';
+                    this.queueContainer.style.opacity = '0';
+                    this.queueContainer.style.transform = 'translateY(100%)';
+                    void this.queueContainer.offsetHeight;
+                    requestAnimationFrame(() => {
+                        if (!this.queueContainer) {
+                            resolve();
+                            return;
+                        }
+                        this.queueContainer.style.opacity = '1';
+                        this.queueContainer.style.transform = 'translateY(0)';
+                        this.queueAnimatePending = false;
+                        setTimeout(() => {
+                            this.setGeneratorScrollLock(false);
+                            resolve();
+                        }, this.queuePanelTransitionMs + 20);
+                    });
+                });
+            });
+        },
+
+        /**
          * Expand the footer to show the queue.
          */
         expandQueue: async function() {
@@ -200,76 +268,25 @@ define([
             }
 
             this.isExpanded = true;
+            this.queueAnimatePending = true;
+            this.setGeneratorScrollLock(true);
             this.blockFooter.classList.add('queue-expanded');
 
-            // Create queue container if it doesn't exist.
             if (!this.queueContainer) {
-                // Insert the queue container right before the footer as a sibling.
                 this.queueContainer = document.createElement('div');
                 this.queueContainer.className = 'queue-container-expanded';
 
                 this.blockFooter.parentNode.insertBefore(this.queueContainer, this.blockFooter);
-
-                const queueHeader = this.queueContainer.querySelector('.queue-header');
-                if (queueHeader) {
-                    queueHeader.addEventListener('click', this.boundHandlers.queueCloseClick);
-                    queueHeader.classList.add('cursor-pointer');
-                }
-                const closeButton = this.queueContainer.querySelector('.queue-close-button');
-                if (closeButton) {
-                    closeButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.boundHandlers.queueCloseClick();
-                    });
-                }
             }
 
-            // Calculate footer height and position queue container below it first.
-            // Use requestAnimationFrame to ensure DOM is updated.
-            requestAnimationFrame(() => {
-                if (this.queueContainer && this.blockFooter) {
-                    const footerHeight = this.blockFooter.offsetHeight;
-                    // Position queue container from top to footer bottom.
-                    this.queueContainer.style.top = '0';
-                    this.queueContainer.style.bottom = `${footerHeight}px`;
-                    // Ensure proper z-index.
-                    this.queueContainer.style.zIndex = '998';
-                    // Start below (translateY(100%)) and hidden.
-                    this.queueContainer.style.transform = 'translateY(100%)';
-                    this.queueContainer.style.opacity = '0';
-                    this.queueContainer.style.visibility = 'hidden';
-                    this.queueContainer.style.pointerEvents = 'none';
-                }
-            });
+            await this.ensureQueueShell();
+            this.showQueueLoading();
+            await this.animateQueuePanelIn();
 
-            // Show loading state only if container is empty or doesn't have content yet.
-            const hasContent = this.queueContainer &&
-                              this.queueContainer.querySelector('.task-list') &&
-                              this.queueContainer.querySelector('.task-list').children.length > 0;
-            if (!hasContent) {
-                this.showQueueLoading();
-            }
-
-            // Load and display the queue, then animate in.
-            await this.updateQueueList();
-
-            // Hide loading after content is loaded (updateQueueList also hides it, but ensure it's hidden).
-            this.hideQueueLoading();
-
-            // Trigger animation after ensuring content is rendered and visible.
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    if (this.queueContainer) {
-                        // Make visible first, then animate.
-                        this.queueContainer.style.visibility = 'visible';
-                        this.queueContainer.style.pointerEvents = 'auto';
-                        // Force reflow to ensure visibility is applied.
-                        void this.queueContainer.offsetHeight;
-                        // Now animate.
-                        this.queueContainer.style.transform = 'translateY(0)';
-                        this.queueContainer.style.opacity = '1';
-                    }
-                });
+            this.updateQueueList().catch(async (error) => {
+                this.hideQueueLoading();
+                const errorTitle = await Str.get_string('error_title', 'block_dixeo_modulegen');
+                Notification.alert(errorTitle, error.message || String(error));
             });
         },
 
@@ -282,10 +299,13 @@ define([
             }
 
             this.isExpanded = false;
+            this.queueAnimatePending = false;
+            this.setGeneratorScrollLock(true);
             this.blockFooter.classList.remove('queue-expanded');
 
             // Animate queue container downward before removing.
             if (this.queueContainer) {
+                this.positionQueueContainer();
                 // Lower z-index immediately BEFORE any animation so it goes behind footer.
                 this.queueContainer.style.zIndex = '997';
                 this.queueContainer.style.transition = 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s';
@@ -303,8 +323,49 @@ define([
                         this.queueContainer.remove();
                         this.queueContainer = null;
                     }
-                }, 300); // Match transition duration.
+                    this.setGeneratorScrollLock(false);
+                }, this.queuePanelTransitionMs);
+            } else {
+                this.setGeneratorScrollLock(false);
             }
+        },
+
+        /**
+         * Attach close handlers on the queue header and close button.
+         */
+        attachQueueCloseHandlers: function() {
+            if (!this.queueContainer) {
+                return;
+            }
+            const queueHeader = this.queueContainer.querySelector('.queue-header');
+            if (queueHeader) {
+                queueHeader.addEventListener('click', this.boundHandlers.queueCloseClick);
+                queueHeader.classList.add('cursor-pointer');
+            }
+            const closeButton = this.queueContainer.querySelector('.queue-close-button');
+            if (closeButton) {
+                closeButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.boundHandlers.queueCloseClick();
+                });
+            }
+        },
+
+        /**
+         * Render the queue panel shell (header + loading + empty list) if not already present.
+         *
+         * @returns {Promise<void>}
+         */
+        ensureQueueShell: async function() {
+            if (!this.queueContainer) {
+                return;
+            }
+            if (this.queueContainer.querySelector('.queue-container')) {
+                return;
+            }
+            const html = await Templates.render('block_dixeo_modulegen/queue', {tasks: []});
+            this.queueContainer.innerHTML = html;
+            this.attachQueueCloseHandlers();
         },
 
         /**
@@ -319,6 +380,7 @@ define([
             if (loadingDiv) {
                 loadingDiv.classList.remove('d-none');
                 loadingDiv.classList.add('d-flex');
+                loadingDiv.setAttribute('aria-busy', 'true');
             }
             if (taskList) {
                 taskList.classList.add('d-none');
@@ -337,6 +399,7 @@ define([
             if (loadingDiv) {
                 loadingDiv.classList.add('d-none');
                 loadingDiv.classList.remove('d-flex');
+                loadingDiv.setAttribute('aria-busy', 'false');
             }
             if (taskList) {
                 taskList.classList.remove('d-none');
@@ -350,7 +413,7 @@ define([
          */
         updateQueueList: function(data = null) {
             if (!this.queueContainer) {
-                return;
+                return Promise.resolve();
             }
 
             // Use provided data or fetch via JobManager (centralized, cached).
@@ -358,7 +421,7 @@ define([
                 ? Promise.resolve(data)
                 : JobManager.getQueueStatus(true);
 
-            dataPromise.then(async (data) => {
+            return dataPromise.then(async (data) => {
                 const context = {tasks: []};
 
                 // Process tasks for template rendering.
@@ -411,33 +474,15 @@ define([
                 const html = await Templates.render('block_dixeo_modulegen/queue', context);
                 this.queueContainer.innerHTML = html;
 
-                // Hide loading after rendering content.
                 this.hideQueueLoading();
-
-                // Re-attach close handlers after rendering.
-                const queueHeader = this.queueContainer.querySelector('.queue-header');
-                if (queueHeader) {
-                    queueHeader.addEventListener('click', this.boundHandlers.queueCloseClick);
-                    queueHeader.classList.add('cursor-pointer');
-                }
-                const closeButton = this.queueContainer.querySelector('.queue-close-button');
-                if (closeButton) {
-                    closeButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.boundHandlers.queueCloseClick();
-                    });
-                }
+                this.attachQueueCloseHandlers();
 
                 // Update position after content is rendered (footer height might have changed).
-                if (this.isExpanded && this.blockFooter) {
+                // Do not reveal the panel here — expandQueue owns the open animation.
+                if (this.isExpanded && this.blockFooter && !this.queueAnimatePending) {
                     requestAnimationFrame(() => {
                         if (this.queueContainer && this.blockFooter) {
-                            const footerHeight = this.blockFooter.offsetHeight;
-                            // Position queue container so its top aligns with footer's bottom.
-                            this.queueContainer.style.bottom = `${footerHeight}px`;
-                            this.queueContainer.style.top = 'auto';
-                            // Animate up from below (translateY(100%) to translateY(0)).
-                            this.queueContainer.style.transform = 'translateY(0)';
+                            this.positionQueueContainer();
                         }
                     });
                 }
@@ -457,6 +502,7 @@ define([
             }).catch(async (error) => {
                 const errorTitle = await Str.get_string('error_title', 'block_dixeo_modulegen');
                 Notification.alert(errorTitle, error.message || String(error));
+                throw error;
             });
         },
 

@@ -99,6 +99,11 @@
     overflow: visible !important;
 }
 
+/* Clip off-screen queue panel during open so it does not inflate scrollHeight. */
+.block_dixeo_modulegen #dixeo-module-generator.queue-panel-opening {
+    overflow: hidden !important;
+}
+
 .block_dixeo_modulegen .card,
 .block_dixeo_modulegen > .card-body {
     overflow: visible !important;
