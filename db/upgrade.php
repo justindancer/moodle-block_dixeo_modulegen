@@ -34,12 +34,25 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool
  */
 function xmldb_block_dixeo_modulegen_upgrade($oldversion, $block) {
+    global $DB;
+
     if ($oldversion < 2026040202) {
         // Sync db/access.php. Core also calls update_capabilities via upgrade_component_updated()
         // after this script returns; this step documents the capability sync in the plugin.
         update_capabilities('block_dixeo_modulegen');
 
         upgrade_block_savepoint(true, 2026040202, 'dixeo_modulegen');
+    }
+
+    if ($oldversion < 2026040204) {
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('block_dixeo_modulegen_queue');
+        $field = new xmldb_field('hints');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_block_savepoint(true, 2026040204, 'dixeo_modulegen');
     }
 
     return true;

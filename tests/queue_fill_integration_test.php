@@ -50,6 +50,9 @@ final class queue_fill_integration_test extends advanced_testcase {
         $row = $DB->get_record(queue_repository::TABLE, ['id' => $id], '*', MUST_EXIST);
         $this->assertSame(queue_status::STATUS_COMPLETED, (int) $row->status);
         $this->assertSame(55, (int) $row->cmid);
+        $params = json_decode($row->params, true);
+        $this->assertIsArray($params);
+        $this->assertSame('Summary', $params['summary'] ?? '');
         $this->assertTrue(queue_task_mode::is_fill($row->params));
     }
 

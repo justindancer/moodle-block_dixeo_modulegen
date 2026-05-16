@@ -185,7 +185,6 @@ class queue_repository {
         $record->title = '';
         $record->description = '';
         $record->instructions = clean_param($instructions, PARAM_RAW_TRIMMED);
-        $record->hints = '';
         $record->sectionnumber = $sectionnumber;
         $record->beforemod = $beforemod;
         $record->cmid = 0;
