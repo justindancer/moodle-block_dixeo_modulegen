@@ -61,6 +61,13 @@ $string['viewinstructions'] = 'Ver instruções';
 $string['noinstructions'] = 'Sem instruções para esta tarefa.';
 $string['retry'] = 'Repetir';
 $string['retrygeneration'] = 'Repetir geração';
+$string['filltask_defaulttitle'] = 'Nova atividade';
+$string['retry_fill_notfound'] = 'Tarefa na fila não encontrada para este curso.';
+$string['retry_fill_notfailed'] = 'Apenas tarefas falhadas podem ser repetidas desta forma.';
+$string['retry_fill_notfill'] = 'Esta repetição aplica-se apenas a tarefas de preenchimento (fill).';
+$string['retry_fill_failed'] = 'O preenchimento do módulo não foi concluído.';
+$string['retry_fill_timeout'] = 'O trabalho de preenchimento IA não foi concluído a tempo.';
+$string['retry_fill_createfailed'] = 'Não foi possível criar a atividade a partir do resultado do preenchimento.';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'Pendente';
@@ -80,3 +87,20 @@ $string['category_content'] = 'Conteúdo';
 $string['category_resource'] = 'Recursos';
 $string['category_interactive'] = 'Interativo';
 $string['category_assessment'] = 'Avaliação';
+$string['category_manual_upload'] = 'Carregamento manual';
+
+// Manual upload modal.
+$string['manual_upload_name_label'] = 'Nome da atividade';
+$string['manual_upload_file_label'] = 'Ficheiro';
+$string['manual_upload_create'] = 'Adicionar atividade';
+$string['manual_upload_drag'] = 'Arraste um ficheiro para aqui ou clique para procurar';
+$string['manual_upload_browse'] = 'Escolher um ficheiro';
+$string['manual_upload_error_missing'] = 'O nome da atividade e o ficheiro são obrigatórios.';
+$string['manual_upload_error_failed'] = 'Não foi possível criar a atividade.';
+$string['manual_upload_scorm_description'] = 'Atualmente só são suportados pacotes SCORM Articulate Storyline (.zip). Quando a sincronização de ficheiros está ativa neste curso, os pacotes carregados são adicionados à base de conhecimento usada pela geração de conteúdo IA e pelo tutor.';
+$string['manual_upload_resource_description'] = '{$a->allowedtypes} Para o tutor e a geração de conteúdo IA, estes formatos são indexados: {$a->ragformats}. Outros tipos de ficheiro carregados ficam no curso mas não são adicionados à base de conhecimento.';
+$string['manual_upload_resource_allowedtypes_all'] = 'Pode carregar qualquer tipo de ficheiro suportado pelo Moodle (como a atividade Ficheiro padrão).';
+
+// SCORM manual upload.
+$string['scorm_package_help'] = 'Carregar um pacote SCORM (.zip)';
+$string['scorm_package_invalid'] = 'O ficheiro carregado não é um pacote SCORM válido.';

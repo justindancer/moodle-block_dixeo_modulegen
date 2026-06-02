@@ -61,6 +61,13 @@ $string['viewinstructions'] = 'Visualizza istruzioni';
 $string['noinstructions'] = 'Nessuna istruzione per questa attività.';
 $string['retry'] = 'Riprova';
 $string['retrygeneration'] = 'Riprova generazione';
+$string['filltask_defaulttitle'] = 'Nuova attività';
+$string['retry_fill_notfound'] = 'Attività in coda non trovata per questo corso.';
+$string['retry_fill_notfailed'] = 'Solo le attività fallite possono essere ripetute in questo modo.';
+$string['retry_fill_notfill'] = 'Questo ripiego si applica solo alle attività di tipo fill.';
+$string['retry_fill_failed'] = 'Il completamento del modulo non è terminato.';
+$string['retry_fill_timeout'] = 'Il lavoro di fill IA non è stato completato in tempo.';
+$string['retry_fill_createfailed'] = 'Impossibile creare l\'attività dal risultato del fill.';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'In attesa';
@@ -80,3 +87,20 @@ $string['category_content'] = 'Contenuto';
 $string['category_resource'] = 'Risorse';
 $string['category_interactive'] = 'Interattivo';
 $string['category_assessment'] = 'Valutazione';
+$string['category_manual_upload'] = 'Caricamento manuale';
+
+// Manual upload modal.
+$string['manual_upload_name_label'] = 'Nome dell\'attività';
+$string['manual_upload_file_label'] = 'File';
+$string['manual_upload_create'] = 'Aggiungi attività';
+$string['manual_upload_drag'] = 'Trascina un file qui o fai clic per sfogliare';
+$string['manual_upload_browse'] = 'Scegli un file';
+$string['manual_upload_error_missing'] = 'Nome dell\'attività e file sono obbligatori.';
+$string['manual_upload_error_failed'] = 'Impossibile creare l\'attività.';
+$string['manual_upload_scorm_description'] = 'Sono attualmente supportati solo i pacchetti SCORM Articulate Storyline (.zip). Quando la sincronizzazione file è attiva per questo corso, i pacchetti caricati vengono aggiunti alla base di conoscenza usata dalla generazione di contenuti IA e dal tutor.';
+$string['manual_upload_resource_description'] = '{$a->allowedtypes} Per il tutor e la generazione di contenuti IA, questi formati sono indicizzati: {$a->ragformats}. Altri tipi di file caricati restano nel corso ma non vengono aggiunti alla base di conoscenza.';
+$string['manual_upload_resource_allowedtypes_all'] = 'Puoi caricare qualsiasi tipo di file supportato da Moodle (come l\'attività File standard).';
+
+// SCORM manual upload.
+$string['scorm_package_help'] = 'Carica un pacchetto SCORM (.zip)';
+$string['scorm_package_invalid'] = 'Il file caricato non è un pacchetto SCORM valido.';

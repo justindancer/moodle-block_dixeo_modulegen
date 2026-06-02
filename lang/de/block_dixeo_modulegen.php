@@ -61,6 +61,13 @@ $string['viewinstructions'] = 'Anweisungen anzeigen';
 $string['noinstructions'] = 'Keine Anweisungen für diese Aufgabe.';
 $string['retry'] = 'Wiederholen';
 $string['retrygeneration'] = 'Generierung wiederholen';
+$string['filltask_defaulttitle'] = 'Neue Aktivität';
+$string['retry_fill_notfound'] = 'Warteschlangenaufgabe für diesen Kurs nicht gefunden.';
+$string['retry_fill_notfailed'] = 'Nur fehlgeschlagene Aufgaben können auf diese Weise wiederholt werden.';
+$string['retry_fill_notfill'] = 'Diese Wiederholung gilt nur für Fill-Aufgaben.';
+$string['retry_fill_failed'] = 'Das Ausfüllen des Moduls wurde nicht abgeschlossen.';
+$string['retry_fill_timeout'] = 'Der KI-Fill-Job wurde nicht rechtzeitig abgeschlossen.';
+$string['retry_fill_createfailed'] = 'Die Aktivität konnte aus dem Fill-Ergebnis nicht erstellt werden.';
 
 // Status strings (matching queue_service constants).
 $string['status_0'] = 'Ausstehend';
@@ -80,3 +87,20 @@ $string['category_content'] = 'Inhalt';
 $string['category_resource'] = 'Ressourcen';
 $string['category_interactive'] = 'Interaktiv';
 $string['category_assessment'] = 'Bewertung';
+$string['category_manual_upload'] = 'Manueller Upload';
+
+// Manual upload modal.
+$string['manual_upload_name_label'] = 'Aktivitätsname';
+$string['manual_upload_file_label'] = 'Datei';
+$string['manual_upload_create'] = 'Aktivität hinzufügen';
+$string['manual_upload_drag'] = 'Datei hierher ziehen oder zum Durchsuchen klicken';
+$string['manual_upload_browse'] = 'Datei auswählen';
+$string['manual_upload_error_missing'] = 'Aktivitätsname und Datei sind erforderlich.';
+$string['manual_upload_error_failed'] = 'Die Aktivität konnte nicht erstellt werden.';
+$string['manual_upload_scorm_description'] = 'Derzeit werden nur Articulate Storyline SCORM-Pakete (.zip) unterstützt. Wenn die Dateisynchronisation für diesen Kurs aktiviert ist, werden hochgeladene Pakete der Wissensbasis für KI-Inhaltsgenerierung und den Tutor hinzugefügt.';
+$string['manual_upload_resource_description'] = '{$a->allowedtypes} Für den Tutor und die KI-Inhaltsgenerierung werden diese Formate indexiert: {$a->ragformats}. Andere hochgeladene Dateitypen werden im Kurs gespeichert, aber nicht in die Wissensbasis aufgenommen.';
+$string['manual_upload_resource_allowedtypes_all'] = 'Sie können jeden von Moodle unterstützten Dateityp hochladen (wie bei der Standard-Dateiaktivität).';
+
+// SCORM manual upload.
+$string['scorm_package_help'] = 'SCORM-Paket hochladen (.zip)';
+$string['scorm_package_invalid'] = 'Die hochgeladene Datei ist kein gültiges SCORM-Paket.';
