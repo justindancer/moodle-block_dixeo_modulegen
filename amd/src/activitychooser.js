@@ -20,8 +20,9 @@ define([
     'core/str',
     'block_dixeo_modulegen/job_manager',
     'block_dixeo_modulegen/queue_status',
-    'block_dixeo_modulegen/ai_action'
-], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction) {
+    'block_dixeo_modulegen/ai_action',
+    'block_dixeo_modulegen/manual_upload_action'
+], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction, ManualUploadAction) {
     'use strict';
 
     let initialized = false;
@@ -43,7 +44,9 @@ define([
     /** @type {HTMLElement|null} Drop target currently showing drop highlight classes (avoids scanning each dragover). */
     let highlightedGenerationDropTarget = null;
 
-    const GENERATION_DRAG_OPTION = '.optionscontainer .optioninfo a[data-target="#generationModal"]';
+    const CHOOSER_MODAL_OPTION =
+        '.optionscontainer .optioninfo a[data-target="#generationModal"], ' +
+        '.optionscontainer .optioninfo a[data-target="#manualUploadModal"]';
     /** Legacy Moodle-style name + block-specific hook for theme/format overrides without .course-content. */
     const DROP_HIGHLIGHT_CLASSES = ['dd-drop-down', 'dixeo-modulegen-drop-target'];
     /** Injected before the first cm in each section list; insert-before = first cm id. */
@@ -139,6 +142,76 @@ define([
     };
 
     /**
+     * Append the Manual upload category when SCORM and/or File mods are installed.
+     *
+     * @param {Array} categoriesArray Existing categories from API transform.
+     * @param {Object} manualConfig Config from PHP (scormInstalled, resourceInstalled).
+     * @returns {Promise<Array>} Categories with manual upload appended when applicable.
+     */
+    const appendManualUploadCategory = async(categoriesArray, manualConfig) => {
+        if (!manualConfig || (!manualConfig.scormInstalled && !manualConfig.resourceInstalled)) {
+            return categoriesArray;
+        }
+
+        const stringRequests = [
+            Str.get_string('category_manual_upload', 'block_dixeo_modulegen'),
+        ];
+        if (manualConfig.scormInstalled) {
+            stringRequests.push(Str.get_string('modulename', 'mod_scorm'));
+        }
+        if (manualConfig.resourceInstalled) {
+            stringRequests.push(Str.get_string('modulename', 'mod_resource'));
+        }
+
+        const strings = await Promise.all(stringRequests);
+        let index = 0;
+        const categoryName = strings[index++];
+
+        const items = [];
+        if (manualConfig.scormInstalled) {
+            const displayname = strings[index++];
+            items.push({
+                shortname: 'scorm',
+                displayname: displayname,
+                iconurl: M.cfg.wwwroot + '/mod/scorm/pix/monologo.svg',
+                manualUploadType: 'scorm',
+                installed: true,
+                component: 'mod_scorm',
+                options: {
+                    href: '#',
+                    enabled: true,
+                    modalTarget: '#manualUploadModal',
+                },
+            });
+        }
+        if (manualConfig.resourceInstalled) {
+            const displayname = strings[index++];
+            items.push({
+                shortname: 'resource',
+                displayname: displayname,
+                iconurl: M.cfg.wwwroot + '/mod/resource/pix/monologo.svg',
+                manualUploadType: 'resource',
+                installed: true,
+                component: 'mod_resource',
+                options: {
+                    href: '#',
+                    enabled: true,
+                    modalTarget: '#manualUploadModal',
+                },
+            });
+        }
+
+        if (!items.length) {
+            return categoriesArray;
+        }
+
+        return categoriesArray.concat([{
+            name: categoryName,
+            items: items,
+        }]);
+    };
+
+    /**
      * Fetch module types from the local_dixeo API and transform for UI.
      *
      * @param {number} courseId - Course id (required for correct language when course forces a locale).
@@ -172,12 +245,13 @@ define([
      *
      * @method init
      * @param {Number} courseId - Course ID to use later on in fetchModules()
+     * @param {Object} [manualUploadConfig] - Manual upload config from PHP.
      */
-    async function init(courseId) {
+    async function init(courseId, manualUploadConfig) {
         const available = await getAvailableModules(courseId);
 
         course = courseId;
-        categories = available.categories;
+        categories = await appendManualUploadCategory(available.categories, manualUploadConfig || {});
 
         // Ensure we only add our listeners once.
         if (initialized) {
@@ -222,6 +296,7 @@ define([
                         // Initialize UI modules after job manager is ready.
                         QueueStatus.init(course, categories);
                         AiAction.init();
+                        ManualUploadAction.init(manualUploadConfig || {});
 
                         // Trigger a custom event to notify that the chooser is ready.
                         document.dispatchEvent(new Event('activityChooserReady'));
@@ -232,6 +307,7 @@ define([
                         console.error('JobManager init failed:', error);
                         QueueStatus.init(course, categories);
                         AiAction.init();
+                        ManualUploadAction.init(manualUploadConfig || {});
                         document.dispatchEvent(new Event('activityChooserReady'));
                     });
             });
@@ -318,7 +394,7 @@ define([
             return;
         }
 
-        const options = block.querySelectorAll(GENERATION_DRAG_OPTION);
+        const options = block.querySelectorAll(CHOOSER_MODAL_OPTION);
         options.forEach(function(option) {
             if (option.classList.contains('disabled')) {
                 return;

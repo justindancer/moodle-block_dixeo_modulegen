@@ -636,6 +636,48 @@
     padding: 15px 0 25px 0;
 }
 
+/* Manual upload modal (moved to body by JS). */
+#manualUploadModal {
+    --dixeo-modulegen-modal-body-bg: #eff6ff;
+}
+
+#manualUploadModal .modal-content {
+    border-radius: 1.2rem;
+}
+
+#manualUploadModal .modal-title {
+    width: 100%;
+    font-size: 30px;
+    color: var(--primary, var(--dixeo-blue, #108df0));
+}
+
+#manualUploadModal .modal-body {
+    padding: 2rem;
+    background-color: var(--dixeo-modulegen-modal-body-bg);
+}
+
+#manualUploadModal .manual-upload-description {
+    line-height: 1.5;
+}
+
+#manualUploadModal .manual-upload-dropzone {
+    background-color: var(--dixeo-modulegen-bg, #fff);
+    border-style: dashed !important;
+    border-color: var(--dixeo-modulegen-border, #dee2e6) !important;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+#manualUploadModal .manual-upload-dropzone.drag-over {
+    border-color: var(--dixeo-modulegen-primary, #108df0) !important;
+    background-color: var(--dixeo-modulegen-bg-muted, #f8f9fa);
+}
+
+#manualUploadModal #manual_upload_submit {
+    font-weight: 700;
+    background-color: var(--dixeo-modulegen-primary, #108df0);
+}
+
 /* ==========================================================================
    7. CONTEXT OVERRIDES
    ========================================================================== */

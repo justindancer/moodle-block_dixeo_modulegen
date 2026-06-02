@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+use block_dixeo_modulegen\manual_upload_context;
+
 /**
  * Whether the Dixeo module generator block is added to the given course (any instance in course context).
  *
@@ -78,7 +80,11 @@ function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page)
 
     if ($page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
         $page->requires->css('/blocks/dixeo_modulegen/styles.css');
-        $page->requires->js_call_amd('block_dixeo_modulegen/activitychooser', 'init', [$page->course->id]);
+        $page->requires->js_call_amd(
+            'block_dixeo_modulegen/activitychooser',
+            'init',
+            [$page->course->id, manual_upload_context::get_js_config()]
+        );
     }
 
     $label = get_string('aiactivities', 'block_dixeo_modulegen');

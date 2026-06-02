@@ -87,3 +87,20 @@ $string['category_content'] = 'Content';
 $string['category_resource'] = 'Resources';
 $string['category_interactive'] = 'Interactive';
 $string['category_assessment'] = 'Assessment';
+$string['category_manual_upload'] = 'Manual upload';
+
+// Manual upload modal.
+$string['manual_upload_name_label'] = 'Activity name';
+$string['manual_upload_file_label'] = 'File';
+$string['manual_upload_create'] = 'Add activity';
+$string['manual_upload_drag'] = 'Drag and drop a file here, or click to browse';
+$string['manual_upload_browse'] = 'Choose a file';
+$string['manual_upload_error_missing'] = 'Activity name and file are required.';
+$string['manual_upload_error_failed'] = 'Could not create the activity.';
+$string['manual_upload_scorm_description'] = 'Only Articulate Storyline SCORM packages (.zip) are currently supported. When file sync is enabled for this course, uploaded packages are added to the knowledge base used by AI content generation and the tutor.';
+$string['manual_upload_resource_description'] = '{$a->allowedtypes} For the tutor and AI content generation, these formats are indexed: {$a->ragformats}. Other uploaded file types are stored in the course but not added to the knowledge base.';
+$string['manual_upload_resource_allowedtypes_all'] = 'You can upload any file type supported by Moodle (same as the standard File activity).';
+
+// SCORM manual upload.
+$string['scorm_package_help'] = 'Upload a SCORM package (.zip)';
+$string['scorm_package_invalid'] = 'The uploaded file is not a valid SCORM package.';

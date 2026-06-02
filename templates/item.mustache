@@ -12,10 +12,11 @@
         href="{{options.href}}"
         role="button"
         data-toggle="modal"
-        data-target="#generationModal"
+        data-target="{{#options.modalTarget}}{{options.modalTarget}}{{/options.modalTarget}}{{^options.modalTarget}}#generationModal{{/options.modalTarget}}"
         data-modal-title="{{#str}}addnew, moodle, {{displayname}}{{/str}}"
         data-module-name="{{shortname}}"
         data-section-number="{{sectionid}}"
+        {{#manualUploadType}}data-manual-upload-type="{{manualUploadType}}"{{/manualUploadType}}
         title="{{#str}}addnew, moodle, {{displayname}}{{/str}}">
     {{/options.enabled}}
     {{^options.enabled}}

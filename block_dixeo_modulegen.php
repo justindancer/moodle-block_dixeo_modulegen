@@ -11,6 +11,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+use block_dixeo_modulegen\manual_upload_context;
+
 /**
  * Block class for the Dixeo Module Generator.
  *
@@ -172,7 +174,7 @@ class block_dixeo_modulegen extends block_base {
         $this->page->requires->js_call_amd(
             'block_dixeo_modulegen/activitychooser',
             'init',
-            [$courseid]
+            [$courseid, manual_upload_context::get_js_config()]
         );
     }
 
