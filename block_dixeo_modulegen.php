@@ -34,7 +34,10 @@ class block_dixeo_modulegen extends block_base {
     ];
 
     /** @var string Required capability to view the block. */
-    private const REQUIRED_CAPABILITY = 'moodle/course:manageactivities';
+    private const REQUIRED_CAPABILITY = 'local/dixeo:generate';
+
+    /** @var string Additional capability required to manage course activities. */
+    private const MANAGE_ACTIVITIES_CAPABILITY = 'moodle/course:manageactivities';
 
     /** @var string Default pagetype pattern for block instances. */
     private const DEFAULT_PAGETYPE_PATTERN = 'course-view-*';
@@ -144,7 +147,8 @@ class block_dixeo_modulegen extends block_base {
      */
     private function can_user_view_block(int $courseid): bool {
         $context = context_course::instance($courseid);
-        return has_capability(self::REQUIRED_CAPABILITY, $context);
+        return has_capability(self::REQUIRED_CAPABILITY, $context)
+            && has_capability(self::MANAGE_ACTIVITIES_CAPABILITY, $context);
     }
 
     /**

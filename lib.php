@@ -70,7 +70,8 @@ function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page)
     }
 
     $context = \context_course::instance($page->course->id);
-    if (!has_capability('moodle/course:manageactivities', $context)) {
+    if (!has_capability('local/dixeo:generate', $context)
+            || !has_capability('moodle/course:manageactivities', $context)) {
         return [];
     }
 

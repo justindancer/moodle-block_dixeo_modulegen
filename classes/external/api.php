@@ -67,6 +67,7 @@ class api extends external_api {
         require_course_login($courseid);
         $context = \context_course::instance($courseid);
         $PAGE->set_context($context);
+        require_capability('local/dixeo:generate', $context);
         require_capability('moodle/course:manageactivities', $context);
         return $context;
     }

@@ -232,7 +232,10 @@ define([
 
         Ajax.call([{
             methodname: 'local_dixeo_get_job_status',
-            args: {jobid: job.jobId}
+            args: {
+                jobid: job.jobId,
+                courseid: job.args.courseid || courseId,
+            }
         }])[0].then((status) => {
             // Job may have been cancelled while polling.
             if (!activeJobs.has(queueId)) {
