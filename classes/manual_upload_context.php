@@ -43,7 +43,7 @@ class manual_upload_context {
         global $CFG;
 
         $installed = plugin_installation_service::get_installed_plugin_map('mod');
-        $ragformats = self::format_rag_extensions();
+        $ragformats = file_sync_service::format_rag_indexed_extensions_label();
 
         return [
             'sesskey' => sesskey(),
@@ -55,20 +55,5 @@ class manual_upload_context {
                 'ragformats' => $ragformats,
             ],
         ];
-    }
-
-    /**
-     * Human-readable RAG-indexed format list for description strings.
-     *
-     * @return string
-     */
-    public static function format_rag_extensions(): string {
-        $extensions = file_sync_service::get_rag_indexed_extensions();
-        $labels = array_map('strtoupper', $extensions);
-        if (count($labels) <= 1) {
-            return implode('', $labels);
-        }
-        $last = array_pop($labels);
-        return implode(', ', $labels) . ', and ' . $last;
     }
 }

@@ -36,7 +36,6 @@ try {
     $courseid = required_param('courseid', PARAM_INT);
     $sectionnumber = optional_param('sectionnumber', 0, PARAM_INT);
     $beforemod = optional_param('beforemod', 0, PARAM_INT);
-    $name = required_param('name', PARAM_TEXT);
 
     if (!in_array($modtype, ['scorm', 'resource'], true)) {
         throw new moodle_exception('error_unsupported_module', 'block_dixeo_modulegen', '', $modtype);
@@ -53,7 +52,6 @@ try {
         $courseid,
         $sectionnumber,
         $beforemod ?: null,
-        $name,
         $uploadedfile
     );
 

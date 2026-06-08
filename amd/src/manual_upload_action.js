@@ -392,7 +392,6 @@ define([
 
             const submitButton = form.querySelector('#manual_upload_submit');
             const closeButton = form.querySelector('.close');
-            const nameInput = form.querySelector('#manual-upload-name');
             const fileInput = form.querySelector('#manual-upload-file');
             const modtypeInput = form.querySelector('#manual-upload-modtype');
 
@@ -401,7 +400,7 @@ define([
                 return;
             }
 
-            if (!nameInput || !nameInput.value.trim() || !fileInput || !fileInput.files || !fileInput.files.length) {
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
                 Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen').then((message) => {
                     Notification.alert('', message);
                 });
@@ -431,7 +430,6 @@ define([
             formData.append('courseid', form.querySelector('#manual-upload-courseid').value);
             formData.append('sectionnumber', form.querySelector('#manual-upload-sectionnumber').value);
             formData.append('beforemod', form.querySelector('#manual-upload-beforemod').value);
-            formData.append('name', nameInput.value.trim());
             formData.append('file', fileInput.files[0]);
 
             const restoreUi = () => {

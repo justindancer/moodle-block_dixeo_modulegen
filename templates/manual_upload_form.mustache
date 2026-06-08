@@ -1,5 +1,5 @@
 {{!
-    Manual upload form: description, name, file upload, submit.
+    Manual upload form: file upload and submit.
 
     @template block_dixeo_modulegen/manual_upload_form
     @package    block_dixeo_modulegen
@@ -12,19 +12,9 @@
         </button>
     </div>
     <div class="modal-body">
-        <div class="form-group">
-            <label for="manual-upload-name">{{#str}}manual_upload_name_label, block_dixeo_modulegen{{/str}}</label>
-            <input type="text"
-                id="manual-upload-name"
-                name="name"
-                class="form-control"
-                maxlength="255"
-                required>
-        </div>
         <div class="form-group mb-0">
-            <label for="manual-upload-file">{{#str}}manual_upload_file_label, block_dixeo_modulegen{{/str}}</label>
             <div id="manual-upload-dropzone" class="manual-upload-dropzone border rounded p-3 text-center">
-                <p class="manual-upload-drag-text mb-2 small text-muted">{{#str}}manual_upload_drag, block_dixeo_modulegen{{/str}}</p>
+                <p id="manual-upload-drag-text" class="manual-upload-drag-text mb-2 small text-muted">{{#str}}manual_upload_drag, block_dixeo_modulegen{{/str}}</p>
                 <p id="manual-upload-description"
                     class="manual-upload-description mb-2 small text-muted"
                     role="note"
@@ -34,6 +24,7 @@
                     id="manual-upload-file"
                     name="file"
                     class="sr-only"
+                    aria-labelledby="manual-upload-drag-text"
                     required>
                 <button type="button" id="manual-upload-browse" class="btn btn-outline-secondary btn-sm">
                     {{#str}}manual_upload_browse, block_dixeo_modulegen{{/str}}

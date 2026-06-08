@@ -90,11 +90,9 @@ $string['category_interactive'] = 'Interactif';
 $string['category_assessment'] = 'Évaluation';
 
 // Upload modal.
-$string['manual_upload_name_label'] = 'Nom de l\'activité';
-$string['manual_upload_file_label'] = 'Fichier';
 $string['manual_upload_drag'] = 'Glissez-déposez un fichier ici ou cliquez pour parcourir';
 $string['manual_upload_browse'] = 'Choisir un fichier';
-$string['manual_upload_error_missing'] = 'Le nom de l\'activité et le fichier sont obligatoires.';
+$string['manual_upload_error_missing'] = 'Un fichier est obligatoire.';
 $string['manual_upload_error_failed'] = 'Impossible de créer l\'activité.';
 $string['manual_upload_error_invalid_scorm'] = 'Seuls les paquets SCORM Articulate Storyline (.zip) sont acceptés.';
 $string['manual_upload_error_invalid_resource'] = 'Seuls ces formats de fichier sont acceptés : {$a->ragformats}.';
