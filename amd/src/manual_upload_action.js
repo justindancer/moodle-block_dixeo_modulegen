@@ -9,8 +9,10 @@ define([
     'jquery',
     'core/notification',
     'core/str',
-    'block_dixeo_modulegen/course_section_refresh'
-], function($, Notification, Str, CourseSectionRefresh) {
+    'block_dixeo_modulegen/course_section_refresh',
+    'block_dixeo_modulegen/job_manager',
+    'block_dixeo_modulegen/generation_notifications'
+], function($, Notification, Str, CourseSectionRefresh, JobManager, GenerationNotifications) {
     'use strict';
 
     /** @type {Object|null} Config from PHP init (upload URL, sesskey, description params). */
@@ -74,7 +76,7 @@ define([
      */
     const showValidationError = async(error) => {
         const message = await Str.get_string(error.key, error.component, error.param || {});
-        Notification.alert('', message);
+        GenerationNotifications.showError(message);
     };
 
     /**
@@ -402,7 +404,7 @@ define([
 
             if (!fileInput || !fileInput.files || !fileInput.files.length) {
                 Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen').then((message) => {
-                    Notification.alert('', message);
+                    GenerationNotifications.showError(message);
                 });
                 return;
             }
@@ -460,16 +462,25 @@ define([
 
                     const sectionNumber = parseInt(form.querySelector('#manual-upload-sectionnumber').value, 10);
                     const cmid = body.cmid ? parseInt(body.cmid, 10) : 0;
+                    const courseid = body.courseid ? parseInt(body.courseid, 10) : 0;
+
+                    GenerationNotifications.showManualUploadSuccess({
+                        link: body.link || '',
+                        name: body.activityname || '',
+                        courseid: courseid,
+                    });
+
+                    JobManager.getQueueStatus(true);
+
                     CourseSectionRefresh.dispatchJobCompleted({
                         cmid: cmid,
                         sectionNumber: sectionNumber,
+                        source: 'manual',
                     });
                 })
                 .catch((error) => {
                     restoreUi();
-                    Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
-                        Notification.alert(title, error.message || String(error));
-                    });
+                    GenerationNotifications.showError(error.message || String(error));
                 });
         },
     };

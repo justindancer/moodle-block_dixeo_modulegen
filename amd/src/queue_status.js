@@ -588,6 +588,9 @@ define([
         handleRetryClick: function(e, link) {
             e.preventDefault();
             const mode = link.getAttribute('data-queue-mode') || 'generate';
+            if (mode === 'manual') {
+                return;
+            }
             if (mode === 'fill') {
                 this.handleFillRetryTask(link);
                 return;

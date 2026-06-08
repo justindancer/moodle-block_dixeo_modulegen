@@ -21,8 +21,9 @@ define([
     'block_dixeo_modulegen/job_manager',
     'block_dixeo_modulegen/queue_status',
     'block_dixeo_modulegen/ai_action',
-    'block_dixeo_modulegen/manual_upload_action'
-], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction, ManualUploadAction) {
+    'block_dixeo_modulegen/manual_upload_action',
+    'block_dixeo_modulegen/generation_notifications'
+], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction, ManualUploadAction, GenerationNotifications) {
     'use strict';
 
     let initialized = false;
@@ -301,6 +302,7 @@ define([
                 // This must complete before other modules try to submit/poll jobs.
                 JobManager.init(course)
                     .then(() => {
+                        GenerationNotifications.init(course);
                         // Initialize UI modules after job manager is ready.
                         QueueStatus.init(course, categories);
                         AiAction.init();
@@ -313,6 +315,7 @@ define([
                         // Graceful degradation - still initialize UI but log warning.
                         // eslint-disable-next-line no-console
                         console.error('JobManager init failed:', error);
+                        GenerationNotifications.init(course);
                         QueueStatus.init(course, categories);
                         AiAction.init();
                         ManualUploadAction.init(manualUploadConfig || {});

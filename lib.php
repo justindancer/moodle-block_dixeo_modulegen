@@ -51,21 +51,78 @@ function block_dixeo_modulegen_course_has_block(int $courseid): bool {
 }
 
 /**
+ * Whether the page is course content where completion notifications apply.
+ *
+ * @param \moodle_page $page
+ * @return bool
+ */
+function block_dixeo_modulegen_is_course_content_page(\moodle_page $page): bool {
+    $path = $page->url->get_path();
+    if (str_contains($path, '/course/view.php') || str_contains($path, '/course/section.php')) {
+        return true;
+    }
+    return str_contains($path, '/mod/') && str_contains($path, '/view.php');
+}
+
+/**
+ * Load AMD for queue polling and/or the activity chooser on course content pages.
+ *
+ * @param \moodle_page $page
+ * @return void
+ */
+function block_dixeo_modulegen_require_page_amd(\moodle_page $page): void {
+    if (empty($page->course->id) || !block_dixeo_modulegen_is_course_content_page($page)) {
+        return;
+    }
+
+    $context = \context_course::instance($page->course->id);
+    if (!has_capability('local/dixeo:generate', $context)
+            || !has_capability('moodle/course:manageactivities', $context)) {
+        return;
+    }
+
+    if (!block_dixeo_modulegen_course_has_block((int) $page->course->id)) {
+        return;
+    }
+
+    if (!$page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
+        return;
+    }
+
+    $page->requires->css('/blocks/dixeo_modulegen/styles.css');
+
+    $path = $page->url->get_path();
+    if (str_contains($path, '/course/view.php') || str_contains($path, '/course/section.php')) {
+        $page->requires->js_call_amd(
+            'block_dixeo_modulegen/activitychooser',
+            'init',
+            [(int) $page->course->id, manual_upload_context::get_js_config()]
+        );
+        return;
+    }
+
+    // Activity module view: resume queue polling and show completion toasts only.
+    $courseid = (int) $page->course->id;
+    $page->requires->js_call_amd('block_dixeo_modulegen/job_manager', 'init', [$courseid]);
+    $page->requires->js_call_amd('block_dixeo_modulegen/generation_notifications', 'init', [$courseid]);
+}
+
+/**
  * Dixeo teacher toolbar: open the module generator sidebar (same capability as the block).
  *
  * @param \moodle_page $page
  * @return array<int, array<string, mixed>>
  */
 function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page): array {
-    $path = $page->url->get_path();
-    $allowed = false;
-    foreach (['/course/view.php', '/course/section.php'] as $fragment) {
-        if (str_contains($path, $fragment)) {
-            $allowed = true;
-            break;
-        }
+    if (empty($page->course->id)) {
+        return [];
     }
-    if (!$allowed || empty($page->course->id)) {
+
+    block_dixeo_modulegen_require_page_amd($page);
+
+    $path = $page->url->get_path();
+    $showbutton = str_contains($path, '/course/view.php') || str_contains($path, '/course/section.php');
+    if (!$showbutton) {
         return [];
     }
 
@@ -77,15 +134,6 @@ function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page)
 
     if (!block_dixeo_modulegen_course_has_block((int) $page->course->id)) {
         return [];
-    }
-
-    if ($page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
-        $page->requires->css('/blocks/dixeo_modulegen/styles.css');
-        $page->requires->js_call_amd(
-            'block_dixeo_modulegen/activitychooser',
-            'init',
-            [$page->course->id, manual_upload_context::get_js_config()]
-        );
     }
 
     $label = get_string('aiactivities', 'block_dixeo_modulegen');

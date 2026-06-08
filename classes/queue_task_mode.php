@@ -22,6 +22,8 @@ final class queue_task_mode {
 
     public const MODE_FILL = 'fill';
 
+    public const MODE_MANUAL = 'manual';
+
     public static function from_params(?string $paramsjson): string {
         if ($paramsjson === null || $paramsjson === '') {
             return self::MODE_GENERATE;
@@ -30,10 +32,20 @@ final class queue_task_mode {
         if (!is_array($p) || empty($p['mode'])) {
             return self::MODE_GENERATE;
         }
-        return $p['mode'] === self::MODE_FILL ? self::MODE_FILL : self::MODE_GENERATE;
+        if ($p['mode'] === self::MODE_FILL) {
+            return self::MODE_FILL;
+        }
+        if ($p['mode'] === self::MODE_MANUAL) {
+            return self::MODE_MANUAL;
+        }
+        return self::MODE_GENERATE;
     }
 
     public static function is_fill(?string $paramsjson): bool {
         return self::from_params($paramsjson) === self::MODE_FILL;
+    }
+
+    public static function is_manual(?string $paramsjson): bool {
+        return self::from_params($paramsjson) === self::MODE_MANUAL;
     }
 }

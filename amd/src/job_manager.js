@@ -132,6 +132,76 @@ define([
     };
 
     /**
+     * Build mod/view.php link for a created activity.
+     *
+     * @param {string} modulename
+     * @param {number} cmid
+     * @returns {string|null}
+     */
+    const buildActivityLink = (modulename, cmid) => {
+        if (!cmid || !modulename) {
+            return null;
+        }
+        return M.cfg.wwwroot + '/mod/' + modulename + '/view.php?id=' + cmid;
+    };
+
+    /**
+     * Dispatch job-completed with queue task metadata when available.
+     *
+     * @param {number} queueId
+     * @param {Object} job
+     * @param {number} cmid
+     * @param {number} sectionNumber
+     */
+    const dispatchCompletionEvent = (queueId, job, cmid, sectionNumber) => {
+        const detail = {
+            queueId: queueId,
+            cmid: cmid,
+            sectionNumber: sectionNumber,
+            queuemode: job.queuemode || 'generate',
+            courseid: job.args.courseid || courseId,
+            modulename: job.args.modulename || '',
+            displaytitle: job.displaytitle || '',
+            link: buildActivityLink(job.args.modulename, cmid),
+        };
+
+        fetchQueueStatus(true).then((data) => {
+            if (data.tasks && Array.isArray(data.tasks)) {
+                const task = data.tasks.find((t) => t.id === queueId);
+                if (task) {
+                    detail.queuemode = task.queuemode || detail.queuemode;
+                    if (task.link) {
+                        detail.link = task.link;
+                    }
+                    if (task.displaytitle) {
+                        detail.displaytitle = task.displaytitle;
+                    }
+                }
+            }
+            dispatchJobEvent('completed', detail);
+        }).catch(() => {
+            dispatchJobEvent('completed', detail);
+        });
+    };
+
+    /**
+     * Dispatch job-failed with queue metadata.
+     *
+     * @param {number} queueId
+     * @param {Object|null} job
+     * @param {string} error
+     */
+    const dispatchFailureEvent = (queueId, job, error) => {
+        dispatchJobEvent('failed', {
+            queueId: queueId,
+            error: error,
+            queuemode: job && job.queuemode ? job.queuemode : 'generate',
+            courseid: job && job.args ? (job.args.courseid || courseId) : courseId,
+            modulename: job && job.args ? (job.args.modulename || '') : '',
+        });
+    };
+
+    /**
      * Update a task status via the API.
      *
      * @param {number} queueId - The queue record ID.
@@ -225,7 +295,7 @@ define([
         if (job.attempts > MAX_POLL_ATTEMPTS) {
             job.status = 'failed';
             updateTask(queueId, 'fail', 0, 'Generation timed out');
-            dispatchJobEvent('failed', {queueId: queueId, error: 'Generation timed out'});
+            dispatchFailureEvent(queueId, job, 'Generation timed out');
             activeJobs.delete(queueId);
             return;
         }
@@ -246,16 +316,12 @@ define([
                 createModuleFromJob(job.jobId, queueId, job.args)
                     .then((result) => {
                         job.status = 'completed';
-                        dispatchJobEvent('completed', {
-                            queueId: queueId,
-                            cmid: result.cmid,
-                            sectionNumber: job.args.sectionnumber
-                        });
+                        dispatchCompletionEvent(queueId, job, result.cmid, job.args.sectionnumber);
                         activeJobs.delete(queueId);
                     })
                     .catch((error) => {
                         job.status = 'failed';
-                        dispatchJobEvent('failed', {queueId: queueId, error: error.message});
+                        dispatchFailureEvent(queueId, job, error.message);
                         activeJobs.delete(queueId);
                     });
                 return;
@@ -265,7 +331,7 @@ define([
                 const errorMsg = status.error?.detail || 'Generation failed';
                 job.status = 'failed';
                 updateTask(queueId, 'fail', 0, errorMsg);
-                dispatchJobEvent('failed', {queueId: queueId, error: errorMsg});
+                dispatchFailureEvent(queueId, job, errorMsg);
                 activeJobs.delete(queueId);
                 return;
             }
@@ -276,7 +342,7 @@ define([
         }).catch((error) => {
             job.status = 'failed';
             updateTask(queueId, 'fail', 0, error.message || 'Polling error');
-            dispatchJobEvent('failed', {queueId: queueId, error: error.message});
+            dispatchFailureEvent(queueId, job, error.message || 'Polling error');
             activeJobs.delete(queueId);
         });
     };
@@ -397,11 +463,7 @@ define([
                 // STATUS_COMPLETED = 2 (completed by another client/cron).
                 if (status === 2) {
                     job.status = 'completed';
-                    dispatchJobEvent('completed', {
-                        queueId: queueId,
-                        cmid: task.cmid || 0,
-                        sectionNumber: job.args.sectionnumber
-                    });
+                    dispatchCompletionEvent(queueId, job, task.cmid || 0, job.args.sectionnumber);
                     activeJobs.delete(queueId);
                     return;
                 }
@@ -410,7 +472,7 @@ define([
                 if (status === 3 || status === 4) {
                     job.status = 'failed';
                     const errorMsg = status === 4 ? 'Task was cancelled' : 'Task failed';
-                    dispatchJobEvent('failed', {queueId: queueId, error: errorMsg});
+                    dispatchFailureEvent(queueId, job, errorMsg);
                     activeJobs.delete(queueId);
                 }
             });
@@ -471,6 +533,8 @@ define([
                     jobId: task.jobid,
                     status: 'processing',
                     attempts: 0,
+                    queuemode: task.queuemode || 'generate',
+                    displaytitle: task.displaytitle || '',
                     args: {
                         courseid: courseId,
                         modulename: task.modulename,
@@ -488,10 +552,15 @@ define([
 
             // STATUS_PENDING = 0
             if (status === 0) {
+                if (task.queuemode === 'fill' || task.queuemode === 'manual') {
+                    return;
+                }
                 activeJobs.set(queueId, {
                     jobId: null,
                     status: 'queued',
                     attempts: 0,
+                    queuemode: task.queuemode || 'generate',
+                    displaytitle: task.displaytitle || '',
                     args: {
                         courseid: courseId,
                         modulename: task.modulename,
@@ -602,6 +671,8 @@ define([
                     jobId: jobId,
                     status: status,
                     attempts: 0,
+                    queuemode: 'generate',
+                    displaytitle: '',
                     args: args,
                     timeoutId: null
                 });

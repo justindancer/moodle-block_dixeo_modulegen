@@ -118,4 +118,55 @@ final class queue_fill_integration_test extends advanced_testcase {
         $params = json_decode($row->params, true);
         $this->assertArrayNotHasKey('error', $params);
     }
+
+    public function test_log_manual_upload_completed_inserts_row(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+
+        $id = queue_service::log_manual_upload_completed(
+            (int) $course->id,
+            'scorm',
+            1,
+            null,
+            88,
+            'My SCORM',
+            'package.zip'
+        );
+
+        $row = $DB->get_record(queue_repository::TABLE, ['id' => $id], '*', MUST_EXIST);
+        $this->assertSame(queue_status::STATUS_COMPLETED, (int) $row->status);
+        $this->assertSame(88, (int) $row->cmid);
+        $this->assertTrue(queue_task_mode::is_manual($row->params));
+        $params = json_decode($row->params, true);
+        $this->assertSame('package.zip', $params['filename'] ?? '');
+    }
+
+    public function test_start_next_invalidates_pending_manual(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+
+        $record = queue_repository::create_base_record(
+            (int) $course->id,
+            'resource',
+            'Manual',
+            1,
+            null,
+            'en'
+        );
+        $record->status = queue_status::STATUS_PENDING;
+        $record->jobid = \core\uuid::generate();
+        $record->params = json_encode(['mode' => queue_task_mode::MODE_MANUAL]);
+        $tid = queue_repository::insert($record);
+
+        $this->assertNull(queue_service::start_next((int) $course->id));
+
+        $row = $DB->get_record(queue_repository::TABLE, ['id' => $tid], '*', MUST_EXIST);
+        $this->assertSame(queue_status::STATUS_FAILED, (int) $row->status);
+    }
 }

@@ -99,6 +99,12 @@ $string['manual_upload_error_invalid_resource'] = 'Só são aceites estes format
 $string['manual_upload_scorm_description'] = 'Apenas pacotes SCORM Articulate Storyline (.zip).';
 $string['manual_upload_resource_description'] = 'Formatos aceites: {$a->ragformats}.';
 
+// Queue notifications.
+$string['task_completed_success'] = 'Atividade « <a href="{$a->link}">{$a->name}</a> » criada.';
+$string['manual_upload_success'] = 'Atividade « <a href="{$a->link}">{$a->name}</a> » adicionada. A sincronização de ficheiros foi iniciada.';
+$string['task_failed'] = 'Falha na geração do módulo: {$a->error}';
+$string['queue_manual_upload_label'] = 'Carregamento manual';
+
 // SCORM upload.
 $string['scorm_package_help'] = 'Carregar um pacote SCORM (.zip)';
 $string['scorm_package_invalid'] = 'O ficheiro carregado não é um pacote SCORM válido.';
