@@ -19,7 +19,8 @@ $string['notavailable'] = 'Este módulo no está disponible o no está configura
 $string['pluginrequired'] = 'Instale el plugin {$a} para generar este tipo de actividad.';
 
 $string['generate'] = 'Generar';
-$string['prompt_placeholder'] = 'Instrucciones de edición para la IA';
+$string['add'] = 'Añadir';
+$string['prompt_placeholder'] = 'Instrucciones de generación para Dixeo';
 $string['loading'] = 'Generando...';
 
 $string['error_title'] = '¡Vaya!';
@@ -87,20 +88,19 @@ $string['category_content'] = 'Contenido';
 $string['category_resource'] = 'Recursos';
 $string['category_interactive'] = 'Interactivo';
 $string['category_assessment'] = 'Evaluación';
-$string['category_manual_upload'] = 'Carga manual';
 
-// Manual upload modal.
+// Upload modal.
 $string['manual_upload_name_label'] = 'Nombre de la actividad';
 $string['manual_upload_file_label'] = 'Archivo';
-$string['manual_upload_create'] = 'Añadir actividad';
 $string['manual_upload_drag'] = 'Arrastre un archivo aquí o haga clic para buscar';
 $string['manual_upload_browse'] = 'Elegir un archivo';
 $string['manual_upload_error_missing'] = 'El nombre de la actividad y el archivo son obligatorios.';
 $string['manual_upload_error_failed'] = 'No se pudo crear la actividad.';
-$string['manual_upload_scorm_description'] = 'Actualmente solo se admiten paquetes SCORM de Articulate Storyline (.zip). Cuando la sincronización de archivos está activada en este curso, los paquetes subidos se añaden a la base de conocimiento usada por la generación de contenido con IA y el tutor.';
-$string['manual_upload_resource_description'] = '{$a->allowedtypes} Para el tutor y la generación de contenido con IA, estos formatos se indexan: {$a->ragformats}. Otros tipos de archivo subidos se guardan en el curso pero no se añaden a la base de conocimiento.';
-$string['manual_upload_resource_allowedtypes_all'] = 'Puede subir cualquier tipo de archivo compatible con Moodle (igual que la actividad Archivo estándar).';
+$string['manual_upload_error_invalid_scorm'] = 'Solo se aceptan paquetes SCORM de Articulate Storyline (.zip).';
+$string['manual_upload_error_invalid_resource'] = 'Solo se aceptan estos formatos de archivo: {$a->ragformats}.';
+$string['manual_upload_scorm_description'] = 'Solo paquetes SCORM de Articulate Storyline (.zip).';
+$string['manual_upload_resource_description'] = 'Formatos aceptados: {$a->ragformats}.';
 
-// SCORM manual upload.
+// SCORM upload.
 $string['scorm_package_help'] = 'Subir un paquete SCORM (.zip)';
 $string['scorm_package_invalid'] = 'El archivo subido no es un paquete SCORM válido.';

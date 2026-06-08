@@ -50,8 +50,8 @@ class manual_upload_context {
             'uploadUrl' => $CFG->wwwroot . '/blocks/dixeo_modulegen/ajax/create_manual_upload.php',
             'scormInstalled' => isset($installed['scorm']),
             'resourceInstalled' => isset($installed['resource']),
+            'ragExtensions' => file_sync_service::get_rag_indexed_extensions(),
             'resourceDescriptionParams' => (object) [
-                'allowedtypes' => get_string('manual_upload_resource_allowedtypes_all', 'block_dixeo_modulegen'),
                 'ragformats' => $ragformats,
             ],
         ];

@@ -19,7 +19,8 @@ $string['notavailable'] = 'Ce module n\'est pas disponible ou n\'est pas correct
 $string['pluginrequired'] = 'Installez le plugin {$a} pour générer ce type d\'activité.';
 
 $string['generate'] = 'Générer';
-$string['prompt_placeholder'] = 'Instructions d\'édition pour l\'IA';
+$string['add'] = 'Ajouter';
+$string['prompt_placeholder'] = 'Instructions de génération pour Dixeo';
 $string['loading'] = 'Génération en cours...';
 
 $string['error_title'] = 'Oups !';
@@ -87,20 +88,19 @@ $string['category_content'] = 'Contenu';
 $string['category_resource'] = 'Ressources';
 $string['category_interactive'] = 'Interactif';
 $string['category_assessment'] = 'Évaluation';
-$string['category_manual_upload'] = 'Téléversement manuel';
 
-// Manual upload modal.
+// Upload modal.
 $string['manual_upload_name_label'] = 'Nom de l\'activité';
 $string['manual_upload_file_label'] = 'Fichier';
-$string['manual_upload_create'] = 'Ajouter l\'activité';
 $string['manual_upload_drag'] = 'Glissez-déposez un fichier ici ou cliquez pour parcourir';
 $string['manual_upload_browse'] = 'Choisir un fichier';
 $string['manual_upload_error_missing'] = 'Le nom de l\'activité et le fichier sont obligatoires.';
 $string['manual_upload_error_failed'] = 'Impossible de créer l\'activité.';
-$string['manual_upload_scorm_description'] = 'Seuls les paquets SCORM Articulate Storyline (.zip) sont actuellement pris en charge. Lorsque la synchronisation des fichiers est activée pour ce cours, les paquets téléversés sont ajoutés à la base de connaissances utilisée par la génération de contenu IA et le tuteur.';
-$string['manual_upload_resource_description'] = '{$a->allowedtypes} Pour le tuteur et la génération de contenu IA, ces formats sont indexés : {$a->ragformats}. Les autres types de fichiers téléversés sont conservés dans le cours mais ne sont pas ajoutés à la base de connaissances.';
-$string['manual_upload_resource_allowedtypes_all'] = 'Vous pouvez téléverser tout type de fichier pris en charge par Moodle (comme l\'activité Fichier standard).';
+$string['manual_upload_error_invalid_scorm'] = 'Seuls les paquets SCORM Articulate Storyline (.zip) sont acceptés.';
+$string['manual_upload_error_invalid_resource'] = 'Seuls ces formats de fichier sont acceptés : {$a->ragformats}.';
+$string['manual_upload_scorm_description'] = 'Paquets SCORM Articulate Storyline (.zip) uniquement.';
+$string['manual_upload_resource_description'] = 'Formats acceptés : {$a->ragformats}.';
 
-// SCORM manual upload.
+// SCORM upload.
 $string['scorm_package_help'] = 'Téléverser un paquet SCORM (.zip)';
 $string['scorm_package_invalid'] = 'Le fichier téléversé n\'est pas un paquet SCORM valide.';

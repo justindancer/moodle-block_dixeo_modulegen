@@ -12,10 +12,6 @@
         </button>
     </div>
     <div class="modal-body">
-        <div id="manual-upload-description"
-            class="manual-upload-description text-muted small mb-3"
-            role="note"
-            aria-live="polite"></div>
         <div class="form-group">
             <label for="manual-upload-name">{{#str}}manual_upload_name_label, block_dixeo_modulegen{{/str}}</label>
             <input type="text"
@@ -29,7 +25,10 @@
             <label for="manual-upload-file">{{#str}}manual_upload_file_label, block_dixeo_modulegen{{/str}}</label>
             <div id="manual-upload-dropzone" class="manual-upload-dropzone border rounded p-3 text-center">
                 <p class="manual-upload-drag-text mb-2 small text-muted">{{#str}}manual_upload_drag, block_dixeo_modulegen{{/str}}</p>
-                <p id="manual-upload-file-help" class="manual-upload-file-help mb-2 small text-muted"></p>
+                <p id="manual-upload-description"
+                    class="manual-upload-description mb-2 small text-muted"
+                    role="note"
+                    aria-live="polite"></p>
                 <p id="manual-upload-filename" class="manual-upload-filename mb-0 small font-weight-bold d-none"></p>
                 <input type="file"
                     id="manual-upload-file"
@@ -47,8 +46,9 @@
         <input type="hidden" id="manual-upload-beforemod" name="beforemod" value="0">
     </div>
     <div class="modal-footer justify-content-end">
-        <button type="submit" id="manual_upload_submit" class="btn btn-primary">
-            {{#str}}manual_upload_create, block_dixeo_modulegen{{/str}}
+        <button type="submit" id="manual_upload_submit" class="btn btn-primary" title="{{#str}}add, block_dixeo_modulegen{{/str}}">
+            <img src="{{config.wwwroot}}/blocks/dixeo_modulegen/pix/dixeo-white.svg" alt="" width="20" height="20" class="mr-1">
+            {{#str}}add, block_dixeo_modulegen{{/str}}
         </button>
     </div>
 </form>
