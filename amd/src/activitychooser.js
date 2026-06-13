@@ -156,11 +156,11 @@ define([
         }
 
         const stringRequests = [Str.get_string('category_content', 'block_dixeo_modulegen')];
-        if (manualConfig.scormInstalled) {
-            stringRequests.push(Str.get_string('modulename', 'mod_scorm'));
-        }
         if (manualConfig.resourceInstalled) {
             stringRequests.push(Str.get_string('modulename', 'mod_resource'));
+        }
+        if (manualConfig.scormInstalled) {
+            stringRequests.push(Str.get_string('modulename', 'mod_scorm'));
         }
 
         const strings = await Promise.all(stringRequests);
@@ -182,22 +182,6 @@ define([
         );
 
         const uploadItems = [];
-        if (manualConfig.scormInstalled) {
-            const displayname = strings[index++];
-            uploadItems.push({
-                shortname: 'scorm',
-                displayname: displayname,
-                iconurl: M.cfg.wwwroot + '/mod/scorm/pix/monologo.svg',
-                manualUploadType: 'scorm',
-                installed: true,
-                component: 'mod_scorm',
-                options: {
-                    href: '#',
-                    enabled: true,
-                    modalTarget: '#manualUploadModal',
-                },
-            });
-        }
         if (manualConfig.resourceInstalled) {
             const displayname = strings[index++];
             uploadItems.push({
@@ -207,6 +191,22 @@ define([
                 manualUploadType: 'resource',
                 installed: true,
                 component: 'mod_resource',
+                options: {
+                    href: '#',
+                    enabled: true,
+                    modalTarget: '#manualUploadModal',
+                },
+            });
+        }
+        if (manualConfig.scormInstalled) {
+            const displayname = strings[index++];
+            uploadItems.push({
+                shortname: 'scorm',
+                displayname: displayname,
+                iconurl: M.cfg.wwwroot + '/mod/scorm/pix/monologo.svg',
+                manualUploadType: 'scorm',
+                installed: true,
+                component: 'mod_scorm',
                 options: {
                     href: '#',
                     enabled: true,
