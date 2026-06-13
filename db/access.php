@@ -18,7 +18,6 @@ $capabilities = [
         'contextlevel' => CONTEXT_BLOCK,
         'archetypes' => [
             'manager' => CAP_ALLOW,
-            'coursecreator' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
         ],
         'clonepermissionsfrom' => 'moodle/site:manageblocks',
