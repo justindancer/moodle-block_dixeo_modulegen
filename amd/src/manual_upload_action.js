@@ -7,12 +7,11 @@
  */
 define([
     'jquery',
-    'core/notification',
     'core/str',
     'block_dixeo_modulegen/course_section_refresh',
     'block_dixeo_modulegen/job_manager',
     'block_dixeo_modulegen/generation_notifications'
-], function($, Notification, Str, CourseSectionRefresh, JobManager, GenerationNotifications) {
+], function($, Str, CourseSectionRefresh, JobManager, GenerationNotifications) {
     'use strict';
 
     /** @type {Object|null} Config from PHP init (upload URL, sesskey, description params). */
@@ -55,6 +54,14 @@ define([
         }
 
         if (modtype === 'resource') {
+            const maxSize = uploadConfig && uploadConfig.maxResourceFileSize;
+            if (maxSize && file.size > maxSize) {
+                return {
+                    key: 'manual_upload_error_file_too_large',
+                    component: 'block_dixeo_modulegen',
+                    param: (uploadConfig && uploadConfig.resourceDescriptionParams) || {},
+                };
+            }
             const extensions = (uploadConfig && uploadConfig.ragExtensions) || [];
             const ext = getFileExtension(file.name);
             if (!extensions.includes(ext)) {
@@ -71,12 +78,45 @@ define([
     };
 
     /**
+     * Hide the inline error region inside the modal body.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const clearModalError = (form) => {
+        const errorEl = form ? form.querySelector('#manual-upload-error') : null;
+        if (!errorEl) {
+            return;
+        }
+        errorEl.textContent = '';
+        errorEl.classList.add('d-none');
+    };
+
+    /**
+     * Show an error inside the modal body (not as a page-level notification).
+     *
+     * @param {HTMLFormElement} form
+     * @param {string} message
+     */
+    const showModalError = (form, message) => {
+        if (!form || !message) {
+            return;
+        }
+        const errorEl = form.querySelector('#manual-upload-error');
+        if (!errorEl) {
+            return;
+        }
+        errorEl.textContent = message;
+        errorEl.classList.remove('d-none');
+    };
+
+    /**
+     * @param {HTMLFormElement} form
      * @param {{key: string, component: string, param?: Object}} error
      * @returns {Promise<void>}
      */
-    const showValidationError = async(error) => {
+    const showValidationError = async(form, error) => {
         const message = await Str.get_string(error.key, error.component, error.param || {});
-        GenerationNotifications.showError(message);
+        showModalError(form, message);
     };
 
     /**
@@ -102,6 +142,7 @@ define([
     const validateAndSelectFile = async(form, file) => {
         if (!file) {
             clearFileSelection(form);
+            clearModalError(form);
             return;
         }
 
@@ -110,10 +151,11 @@ define([
         const error = validateUploadFile(file, modtype);
         if (error) {
             clearFileSelection(form);
-            await showValidationError(error);
+            await showValidationError(form, error);
             return;
         }
 
+        clearModalError(form);
         setSelectedFile(form, file);
     };
 
@@ -159,6 +201,7 @@ define([
      */
     const resetForm = (form) => {
         form.reset();
+        clearModalError(form);
         const filenameEl = form.querySelector('#manual-upload-filename');
         if (filenameEl) {
             filenameEl.textContent = '';
@@ -398,14 +441,13 @@ define([
             const modtypeInput = form.querySelector('#manual-upload-modtype');
 
             if (!uploadConfig || !uploadConfig.uploadUrl || !uploadConfig.sesskey) {
-                Notification.exception({message: 'Manual upload is not configured.'});
+                showModalError(form, 'Manual upload is not configured.');
                 return;
             }
 
             if (!fileInput || !fileInput.files || !fileInput.files.length) {
-                Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen').then((message) => {
-                    GenerationNotifications.showError(message);
-                });
+                const message = await Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen');
+                showModalError(form, message);
                 return;
             }
 
@@ -413,9 +455,11 @@ define([
             const modtype = modtypeInput ? modtypeInput.value : '';
             const validationError = validateUploadFile(file, modtype);
             if (validationError) {
-                await showValidationError(validationError);
+                await showValidationError(form, validationError);
                 return;
             }
+
+            clearModalError(form);
 
             isModalClosingDisabled = true;
             if (submitButton) {
@@ -480,7 +524,7 @@ define([
                 })
                 .catch((error) => {
                     restoreUi();
-                    GenerationNotifications.showError(error.message || String(error));
+                    showModalError(form, error.message || String(error));
                 });
         },
     };

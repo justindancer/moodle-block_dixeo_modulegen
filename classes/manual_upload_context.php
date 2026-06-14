@@ -25,6 +25,7 @@
 namespace block_dixeo_modulegen;
 
 use local_dixeo\service\file_sync_service;
+use local_dixeo\service\manual_upload_service;
 use local_dixeo\service\plugin_installation_service;
 
 defined('MOODLE_INTERNAL') || die();
@@ -44,6 +45,7 @@ class manual_upload_context {
 
         $installed = plugin_installation_service::get_installed_plugin_map('mod');
         $ragformats = file_sync_service::format_rag_indexed_extensions_label();
+        $maxresourcesize = display_size(manual_upload_service::MAX_RESOURCE_FILE_SIZE);
 
         return [
             'sesskey' => sesskey(),
@@ -51,8 +53,10 @@ class manual_upload_context {
             'scormInstalled' => isset($installed['scorm']),
             'resourceInstalled' => isset($installed['resource']),
             'ragExtensions' => file_sync_service::get_rag_indexed_extensions(),
+            'maxResourceFileSize' => manual_upload_service::MAX_RESOURCE_FILE_SIZE,
             'resourceDescriptionParams' => (object) [
                 'ragformats' => $ragformats,
+                'maxsize' => $maxresourcesize,
             ],
         ];
     }

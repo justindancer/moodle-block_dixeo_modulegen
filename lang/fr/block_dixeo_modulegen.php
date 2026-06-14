@@ -96,8 +96,9 @@ $string['manual_upload_error_missing'] = 'Un fichier est obligatoire.';
 $string['manual_upload_error_failed'] = 'Impossible de créer l\'activité.';
 $string['manual_upload_error_invalid_scorm'] = 'Seuls les paquets SCORM Articulate Storyline (.zip) sont acceptés.';
 $string['manual_upload_error_invalid_resource'] = 'Seuls ces formats de fichier sont acceptés : {$a->ragformats}.';
+$string['manual_upload_error_file_too_large'] = 'Le fichier est trop volumineux. Veuillez télécharger un fichier de moins de {$a->maxsize}.';
 $string['manual_upload_scorm_description'] = 'Paquets SCORM Articulate Storyline (.zip) uniquement.';
-$string['manual_upload_resource_description'] = 'Formats acceptés : {$a->ragformats}.';
+$string['manual_upload_resource_description'] = 'Formats acceptés : {$a->ragformats}. (Max. {$a->maxsize})';
 
 // Queue notifications.
 $string['task_completed_success'] = 'Activité « <a href="{$a->link}">{$a->name}</a> » créée.';
