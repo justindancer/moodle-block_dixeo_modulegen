@@ -348,9 +348,41 @@
     padding: 0.25rem 0;
 }
 
-/* Instructions: hover over status area (wrapper) shows tooltip; no icon. */
+/* Instructions: hover over status area shows tooltip; copy icon copies text. */
 .task-list .task-instructions-trigger-wrapper {
     vertical-align: middle;
+    gap: 0.25rem;
+}
+
+.task-list .task-copy-instructions-button {
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+    color: var(--dixeo-modulegen-text-muted);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, visibility 0.15s ease, color 0.15s ease;
+}
+
+.task-list .task-item:hover .task-copy-instructions-button,
+.task-list .task-copy-instructions-button:focus-visible,
+.task-list .task-copy-instructions-button--done {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.task-list .task-copy-instructions-button:hover,
+.task-list .task-copy-instructions-button:focus {
+    color: var(--dixeo-modulegen-text-muted);
+    text-decoration: none;
+}
+
+.task-list .task-copy-instructions-button--done,
+.task-list .task-copy-instructions-button--done:hover,
+.task-list .task-copy-instructions-button--done:focus {
+    color: #16a34a;
 }
 
 /* Instructions tooltip (shown on hover, created in JS; appended to body so use fallbacks). */

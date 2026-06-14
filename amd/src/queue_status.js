@@ -563,6 +563,8 @@ define([
             task.isnext = false;
 
             // Status display text for template.
+            task.hasinstructions = ((task.instructions || '').trim().length > 0);
+
             if (status === 0) {
                 task.statusdisplay = await Str.get_string('queued', 'block_dixeo_modulegen');
             } else if (status === 3) {
@@ -605,7 +607,80 @@ define([
                 link.addEventListener('click', (e) => this.handleRetryClick(e, link));
             });
 
+            const copyButtons = this.queueContainer.querySelectorAll('.task-copy-instructions-button');
+            copyButtons.forEach((button) => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleCopyInstructions(button);
+                });
+            });
+
             this.bindInstructionsTooltips();
+        },
+
+        /**
+         * Copy task instructions to the clipboard.
+         *
+         * @param {HTMLButtonElement} button - The copy control.
+         */
+        handleCopyInstructions: async function(button) {
+            const wrapper = button.closest('.task-instructions-trigger-wrapper');
+            if (!wrapper) {
+                return;
+            }
+
+            const contentEl = wrapper.querySelector('.task-instructions-content');
+            const text = contentEl ? contentEl.textContent.trim() : '';
+            if (!text) {
+                return;
+            }
+
+            const icon = button.querySelector('.task-copy-instructions-button__icon');
+            const copyLabel = button.dataset.copyLabel || '';
+            const copiedLabel = button.dataset.copiedLabel || '';
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+
+                button.classList.add('task-copy-instructions-button--done');
+                if (icon) {
+                    icon.className = 'fa fa-check task-copy-instructions-button__icon';
+                }
+                if (copiedLabel) {
+                    button.setAttribute('title', copiedLabel);
+                    button.setAttribute('aria-label', copiedLabel);
+                }
+
+                if (button._copyResetTimeout) {
+                    clearTimeout(button._copyResetTimeout);
+                }
+                button._copyResetTimeout = setTimeout(() => {
+                    button.classList.remove('task-copy-instructions-button--done');
+                    if (icon) {
+                        icon.className = 'fa fa-copy task-copy-instructions-button__icon';
+                    }
+                    if (copyLabel) {
+                        button.setAttribute('title', copyLabel);
+                        button.setAttribute('aria-label', copyLabel);
+                    }
+                    button._copyResetTimeout = null;
+                }, 1500);
+            } catch (error) {
+                Notification.exception(error);
+            }
         },
 
         /**
@@ -684,7 +759,7 @@ define([
         },
 
         /**
-         * Bind hover tooltips for task instructions (trigger = status area wrapper, no icon).
+         * Bind hover tooltips for task instructions (trigger = status area wrapper).
          */
         bindInstructionsTooltips: function() {
             if (!this.queueContainer) {

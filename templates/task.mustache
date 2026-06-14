@@ -30,11 +30,13 @@
                 {{#isqueued}}
                     {{^isnext}}
                         <span class="task-status task-status-queued small text-muted d-inline-flex">{{statusdisplay}}</span>
+                        {{> block_dixeo_modulegen/task_copy_instructions}}
                     {{/isnext}}
                 {{/isqueued}}
                 {{! Status: Next }}
                 {{#isnext}}
                     <span class="task-status task-status-next small text-muted d-inline-flex">{{statusdisplay}}</span>
+                    {{> block_dixeo_modulegen/task_copy_instructions}}
                 {{/isnext}}
                 {{! Status: Processing - green box with elapsed time }}
                 {{#isprocessing}}
@@ -42,11 +44,13 @@
                         <span class="processing-label">{{#str}}processing, block_dixeo_modulegen{{/str}}...</span>
                         <span class="elapsed-time">0:00</span>
                     </div>
+                    {{> block_dixeo_modulegen/task_copy_instructions}}
                 {{/isprocessing}}
                 {{! Status: Failed + Retry link }}
                 {{#isfailed}}
                     <span class="task-status-inline d-inline-flex align-items-center flex-wrap">
                         <span class="task-status task-status-error small">{{statusdisplay}}</span>
+                        {{> block_dixeo_modulegen/task_copy_instructions}}
                         <span class="task-status-sep" aria-hidden="true"></span>
                         <a href="#" class="task-retry-link small" data-task-id="{{id}}" data-queue-mode="{{queuemode}}" data-module-name="{{modulename}}" data-sectionnumber="{{sectionnumber}}" data-beforemod="{{beforemod}}" data-courseid="{{courseid}}">{{#str}}retry, block_dixeo_modulegen{{/str}}</a>
                     </span>
@@ -55,6 +59,7 @@
                 {{#iscancelled}}
                     <span class="task-status-inline d-inline-flex align-items-center flex-wrap">
                         <span class="task-status task-status-cancelled small text-muted">{{statusdisplay}}</span>
+                        {{> block_dixeo_modulegen/task_copy_instructions}}
                         <span class="task-status-sep" aria-hidden="true"></span>
                         <a href="#" class="task-retry-link small" data-task-id="{{id}}" data-queue-mode="{{queuemode}}" data-module-name="{{modulename}}" data-sectionnumber="{{sectionnumber}}" data-beforemod="{{beforemod}}" data-courseid="{{courseid}}">{{#str}}retry, block_dixeo_modulegen{{/str}}</a>
                     </span>
@@ -62,6 +67,7 @@
                 {{! Status: Completed - short date }}
                 {{#iscompleted}}
                     <span class="task-status task-status-completed small text-muted d-inline-flex">{{completedonshort}}</span>
+                    {{> block_dixeo_modulegen/task_copy_instructions}}
                 {{/iscompleted}}
             </span>
         </div>
