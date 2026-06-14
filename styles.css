@@ -403,6 +403,27 @@
     white-space: pre-wrap;
     word-break: break-word;
     pointer-events: auto;
+    user-select: text;
+    cursor: text;
+}
+
+/* Invisible hover bridge so the pointer can reach the tooltip without it closing. */
+.task-instructions-tooltip--below::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+}
+
+.task-instructions-tooltip--above::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
 }
 
 .block_dixeo_modulegen #module-generator-options a.disabled {

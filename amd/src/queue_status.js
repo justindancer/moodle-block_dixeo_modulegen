@@ -760,6 +760,7 @@ define([
 
         /**
          * Bind hover tooltips for task instructions (trigger = status area wrapper).
+         * Tooltip stays open while hovering the trigger or the tooltip itself so users can scroll/select.
          */
         bindInstructionsTooltips: function() {
             if (!this.queueContainer) {
@@ -767,73 +768,119 @@ define([
             }
 
             const triggers = this.queueContainer.querySelectorAll('.task-instructions-trigger-wrapper');
-            let hideTimeout = null;
-
-            const hideTooltip = () => {
-                hideTimeout = setTimeout(() => {
-                    const el = document.body.querySelector('.task-instructions-tooltip');
-                    if (el) {
-                        el.style.display = 'none';
-                    }
-                    hideTimeout = null;
-                }, 100);
-            };
-
             let tooltipEl = document.body.querySelector('.task-instructions-tooltip');
             if (!tooltipEl) {
                 tooltipEl = document.createElement('div');
                 tooltipEl.className = 'task-instructions-tooltip';
                 tooltipEl.setAttribute('role', 'tooltip');
                 document.body.appendChild(tooltipEl);
-                tooltipEl.addEventListener('mouseenter', () => {
-                    if (hideTimeout) {
-                        clearTimeout(hideTimeout);
-                        hideTimeout = null;
-                    }
-                });
-                tooltipEl.addEventListener('mouseleave', () => hideTooltip());
             }
-            tooltipEl.style.display = 'none';
 
-            const showTooltip = (wrapper, content) => {
-                if (hideTimeout) {
-                    clearTimeout(hideTimeout);
-                    hideTimeout = null;
-                }
-                const text = (content && content.trim()) ? content.trim() : null;
-                if (text) {
-                    tooltipEl.textContent = text;
-                } else {
-                    Str.get_string('noinstructions', 'block_dixeo_modulegen').then((s) => {
-                        tooltipEl.textContent = s;
-                    });
-                }
-                const rect = wrapper.getBoundingClientRect();
-                let top = rect.bottom + 6;
-                let left = rect.left;
-                tooltipEl.style.top = top + 'px';
-                tooltipEl.style.left = left + 'px';
-                tooltipEl.style.display = 'block';
-                requestAnimationFrame(() => {
-                    const tr = tooltipEl.getBoundingClientRect();
-                    if (tr.bottom > window.innerHeight - 8) {
-                        tooltipEl.style.top = (rect.top - tr.height - 6) + 'px';
-                    }
-                    if (tr.right > window.innerWidth - 8) {
-                        tooltipEl.style.left = (window.innerWidth - tr.width - 8) + 'px';
-                    }
-                    if (parseInt(tooltipEl.style.left, 10) < 8) {
-                        tooltipEl.style.left = '8px';
-                    }
+            if (!tooltipEl._instructionsTooltipState) {
+                tooltipEl._instructionsTooltipState = {
+                    hideTimeout: null,
+                    isHoveringTooltip: false,
+                    isHoveringTrigger: false,
+                };
+
+                tooltipEl.addEventListener('mouseenter', () => {
+                    const state = tooltipEl._instructionsTooltipState;
+                    state.isHoveringTooltip = true;
+                    this.clearInstructionsTooltipHide(state);
                 });
-            };
+                tooltipEl.addEventListener('mouseleave', () => {
+                    const state = tooltipEl._instructionsTooltipState;
+                    state.isHoveringTooltip = false;
+                    this.scheduleInstructionsTooltipHide(state, tooltipEl);
+                });
+            }
+
+            const state = tooltipEl._instructionsTooltipState;
+            this.clearInstructionsTooltipHide(state);
+            tooltipEl.style.display = 'none';
 
             triggers.forEach((wrapper) => {
                 const contentEl = wrapper.querySelector('.task-instructions-content');
                 const content = contentEl ? contentEl.textContent : '';
 
-                wrapper.addEventListener('mouseenter', () => showTooltip(wrapper, content));
-                wrapper.addEventListener('mouseleave', () => hideTooltip());
+                wrapper.addEventListener('mouseenter', () => {
+                    state.isHoveringTrigger = true;
+                    this.clearInstructionsTooltipHide(state);
+                    this.showInstructionsTooltip(tooltipEl, wrapper, content);
+                });
+                wrapper.addEventListener('mouseleave', () => {
+                    state.isHoveringTrigger = false;
+                    this.scheduleInstructionsTooltipHide(state, tooltipEl);
+                });
+            });
+        },
+
+        /**
+         * Cancel a pending instructions-tooltip hide.
+         *
+         * @param {Object} state - Shared tooltip hover state.
+         */
+        clearInstructionsTooltipHide: function(state) {
+            if (state.hideTimeout) {
+                clearTimeout(state.hideTimeout);
+                state.hideTimeout = null;
+            }
+        },
+
+        /**
+         * Hide the instructions tooltip after a short delay unless still hovered.
+         *
+         * @param {Object} state - Shared tooltip hover state.
+         * @param {HTMLElement} tooltipEl - The tooltip element.
+         */
+        scheduleInstructionsTooltipHide: function(state, tooltipEl) {
+            this.clearInstructionsTooltipHide(state);
+            state.hideTimeout = setTimeout(() => {
+                if (!state.isHoveringTrigger && !state.isHoveringTooltip) {
+                    tooltipEl.style.display = 'none';
+                }
+                state.hideTimeout = null;
+            }, 250);
+        },
+
+        /**
+         * Position and show the instructions tooltip for a task row.
+         *
+         * @param {HTMLElement} tooltipEl - The tooltip element.
+         * @param {HTMLElement} wrapper - The trigger wrapper.
+         * @param {string} content - Instruction text.
+         */
+        showInstructionsTooltip: function(tooltipEl, wrapper, content) {
+            const text = (content && content.trim()) ? content.trim() : null;
+            if (text) {
+                tooltipEl.textContent = text;
+            } else {
+                Str.get_string('noinstructions', 'block_dixeo_modulegen').then((s) => {
+                    tooltipEl.textContent = s;
+                });
+            }
+
+            const rect = wrapper.getBoundingClientRect();
+            const gap = 2;
+            tooltipEl.classList.remove('task-instructions-tooltip--above', 'task-instructions-tooltip--below');
+            tooltipEl.classList.add('task-instructions-tooltip--below');
+            tooltipEl.style.top = (rect.bottom + gap) + 'px';
+            tooltipEl.style.left = rect.left + 'px';
+            tooltipEl.style.display = 'block';
+
+            requestAnimationFrame(() => {
+                const tr = tooltipEl.getBoundingClientRect();
+                if (tr.bottom > window.innerHeight - 8) {
+                    tooltipEl.classList.remove('task-instructions-tooltip--below');
+                    tooltipEl.classList.add('task-instructions-tooltip--above');
+                    tooltipEl.style.top = (rect.top - tr.height - gap) + 'px';
+                }
+                if (tr.right > window.innerWidth - 8) {
+                    tooltipEl.style.left = (window.innerWidth - tr.width - 8) + 'px';
+                }
+                if (parseInt(tooltipEl.style.left, 10) < 8) {
+                    tooltipEl.style.left = '8px';
+                }
             });
         },
 
