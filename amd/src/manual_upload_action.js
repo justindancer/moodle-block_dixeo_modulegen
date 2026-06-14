@@ -515,6 +515,7 @@ define([
                     });
 
                     JobManager.getQueueStatus(true);
+                    document.dispatchEvent(new Event('newTaskAdded'));
 
                     CourseSectionRefresh.dispatchJobCompleted({
                         cmid: cmid,

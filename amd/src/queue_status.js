@@ -99,6 +99,7 @@ define([
                 queueCloseClick: () => this.collapseQueue(),
                 queueDataUpdate: (event) => this.handleQueueData(event),
                 triggerRefresh: () => this.updateQueueStatistics(),
+                taskAdded: () => this.handleTaskAdded(),
                 beforeUnload: () => this.cleanup(),
                 filterHandler: null
             };
@@ -119,8 +120,8 @@ define([
             document.addEventListener('job-queue-data', this.boundHandlers.queueDataUpdate);
 
             // Listen for job lifecycle events to trigger immediate refresh.
-            document.addEventListener('newTaskAdded', this.boundHandlers.triggerRefresh);
-            document.addEventListener('job-queued', this.boundHandlers.triggerRefresh);
+            document.addEventListener('newTaskAdded', this.boundHandlers.taskAdded);
+            document.addEventListener('job-queued', this.boundHandlers.taskAdded);
             document.addEventListener('job-processing', this.boundHandlers.triggerRefresh);
             document.addEventListener('job-completed', this.boundHandlers.triggerRefresh);
             document.addEventListener('job-failed', this.boundHandlers.triggerRefresh);
@@ -154,8 +155,8 @@ define([
                     }
                 }
                 document.removeEventListener('job-queue-data', this.boundHandlers.queueDataUpdate);
-                document.removeEventListener('newTaskAdded', this.boundHandlers.triggerRefresh);
-                document.removeEventListener('job-queued', this.boundHandlers.triggerRefresh);
+                document.removeEventListener('newTaskAdded', this.boundHandlers.taskAdded);
+                document.removeEventListener('job-queued', this.boundHandlers.taskAdded);
                 document.removeEventListener('job-processing', this.boundHandlers.triggerRefresh);
                 document.removeEventListener('job-completed', this.boundHandlers.triggerRefresh);
                 document.removeEventListener('job-failed', this.boundHandlers.triggerRefresh);
@@ -180,6 +181,34 @@ define([
             // Update queue list if expanded.
             if (this.isExpanded && this.queueContainer) {
                 this.updateQueueList(data);
+            }
+        },
+
+        /**
+         * Expand the queue when a new task is added and refresh visible list/stats.
+         */
+        handleTaskAdded: async function() {
+            this.updateQueueStatistics();
+            await this.expandQueueOnTaskAdded();
+        },
+
+        /**
+         * Open the queue panel when collapsed; refresh the task list when already open.
+         *
+         * @returns {Promise<void>}
+         */
+        expandQueueOnTaskAdded: async function() {
+            if (!this.blockFooter) {
+                return;
+            }
+
+            if (!this.isExpanded) {
+                await this.expandQueue();
+                return;
+            }
+
+            if (this.queueContainer && !this.queueAnimatePending) {
+                this.updateQueueList().catch(() => {});
             }
         },
 
