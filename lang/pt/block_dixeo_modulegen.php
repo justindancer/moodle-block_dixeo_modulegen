@@ -92,6 +92,7 @@ $string['category_assessment'] = 'Avaliação';
 // Upload modal.
 $string['manual_upload_drag'] = 'Arraste um ficheiro para aqui ou clique para procurar';
 $string['manual_upload_browse'] = 'Escolher um ficheiro';
+$string['manual_upload_uploading'] = 'A carregar...';
 $string['manual_upload_error_missing'] = 'O ficheiro é obrigatório.';
 $string['manual_upload_error_failed'] = 'Não foi possível criar a atividade.';
 $string['manual_upload_error_invalid_scorm'] = 'Só são aceites pacotes SCORM Articulate Storyline (.zip).';

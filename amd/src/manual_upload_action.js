@@ -195,6 +195,54 @@ define([
     };
 
     /**
+     * Show upload-in-progress state in the modal body.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const showUploadLoading = (form) => {
+        const content = form.querySelector('#manual-upload-content');
+        const loading = form.querySelector('#manual-upload-loading');
+        const errorEl = form.querySelector('#manual-upload-error');
+        const footerContent = form.querySelector('#manual-upload-footer-content');
+
+        if (errorEl) {
+            errorEl.classList.add('d-none');
+        }
+        if (content) {
+            content.classList.add('d-none');
+        }
+        if (loading) {
+            loading.classList.remove('d-none');
+            loading.setAttribute('aria-busy', 'true');
+        }
+        if (footerContent) {
+            footerContent.classList.add('d-none');
+        }
+    };
+
+    /**
+     * Restore the normal modal body after upload completes or fails.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const hideUploadLoading = (form) => {
+        const content = form.querySelector('#manual-upload-content');
+        const loading = form.querySelector('#manual-upload-loading');
+        const footerContent = form.querySelector('#manual-upload-footer-content');
+
+        if (content) {
+            content.classList.remove('d-none');
+        }
+        if (loading) {
+            loading.classList.add('d-none');
+            loading.setAttribute('aria-busy', 'false');
+        }
+        if (footerContent) {
+            footerContent.classList.remove('d-none');
+        }
+    };
+
+    /**
      * Reset the form to a clean state.
      *
      * @param {HTMLFormElement} form
@@ -202,6 +250,7 @@ define([
     const resetForm = (form) => {
         form.reset();
         clearModalError(form);
+        hideUploadLoading(form);
         const filenameEl = form.querySelector('#manual-upload-filename');
         if (filenameEl) {
             filenameEl.textContent = '';
@@ -460,6 +509,7 @@ define([
             }
 
             clearModalError(form);
+            showUploadLoading(form);
 
             isModalClosingDisabled = true;
             if (submitButton) {
@@ -480,6 +530,7 @@ define([
 
             const restoreUi = () => {
                 isModalClosingDisabled = false;
+                hideUploadLoading(form);
                 if (submitButton) {
                     submitButton.disabled = false;
                 }

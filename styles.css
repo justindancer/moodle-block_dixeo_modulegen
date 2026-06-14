@@ -640,6 +640,14 @@
     padding: 15px 0 25px 0;
 }
 
+#manualUploadModal .manual-upload-loading {
+    min-height: 8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
 #manualUploadModal .manual-upload-description {
     line-height: 1.5;
 }
