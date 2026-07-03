@@ -14,7 +14,7 @@
 
 namespace block_dixeo_modulegen;
 
-use local_dixeo\service\module_generation_service;
+use local_dixeo\external\service_factory;
 use local_dixeo\service\job_service;
 use local_dixeo\api\exception\api_exception;
 
@@ -40,8 +40,7 @@ class queue_service {
     /**
      * Submit a generation request.
      *
-     * If no active job exists for the course, submits to API immediately.
-     * Otherwise, queues as PENDING to wait for the active job.
+     * Always inserts a PENDING row and schedules background processing (sync then API submit).
      *
      * @param int $courseid The course ID.
      * @param string $modulename The module type to generate.
@@ -49,8 +48,7 @@ class queue_service {
      * @param int|null $sectionnumber Section number to add module to.
      * @param int|null $beforemod Course module ID to insert before.
      * @param string|null $lang Language code for content.
-     * @return array Result with queue_id, job_id (if started), and status.
-     * @throws api_exception If API call fails when starting immediately.
+     * @return array Result with queue_id, job_id (null until processed), and status.
      */
     public static function submit(
         int $courseid,
@@ -60,58 +58,44 @@ class queue_service {
         ?int $beforemod = null,
         ?string $lang = null
     ): array {
+        global $USER;
+
         // Use current language if not specified.
         if (empty($lang)) {
             $lang = current_language();
         }
 
-        // Check if course already has an active (PROCESSING) job.
-        if (self::has_active_job($courseid)) {
-            $queueid = self::add_task(
-                $courseid,
-                $modulename,
-                $instructions,
-                queue_status::STATUS_PENDING,
-                null,
-                $sectionnumber,
-                $beforemod,
-                $lang
-            );
-
-            return [
-                'queueid' => $queueid,
-                'jobid' => null,
-                'status' => 'queued',
-            ];
-        }
-
-        // No active job - submit to API immediately.
-        $result = self::submit_to_api($modulename, $instructions, $courseid, $sectionnumber);
+        $userid = (int) ($USER->id ?? 0);
 
         $queueid = self::add_task(
             $courseid,
             $modulename,
             $instructions,
-            queue_status::STATUS_PROCESSING,
-            $result->jobid,
+            queue_status::STATUS_PENDING,
+            null,
             $sectionnumber,
             $beforemod,
-            $lang
+            $lang,
+            $userid > 0 ? $userid : null
         );
+
+        if ($userid > 0) {
+            queue_processor::schedule($courseid, $userid);
+        }
 
         return [
             'queueid' => $queueid,
-            'jobid' => $result->jobid,
-            'status' => 'processing',
+            'jobid' => null,
+            'status' => 'queued',
         ];
     }
 
     /**
-     * Mark a task as completed and start the next pending task.
+     * Mark a task as completed and schedule processing of the next pending task.
      *
      * @param int $queueid The queue record ID.
      * @param int $cmid The created course module ID.
-     * @return array|null Info about the next task if one was started, null otherwise.
+     * @return null Background processor handles the next task.
      */
     public static function complete(int $queueid, int $cmid): ?array {
         $task = queue_repository::get_by_id($queueid);
@@ -123,15 +107,17 @@ class queue_service {
             $task->cmid = $cmid;
         });
 
-        return self::start_next((int) $task->courseid);
+        self::schedule_queue_processing((int) $task->courseid);
+
+        return null;
     }
 
     /**
-     * Mark a task as failed and start the next pending task.
+     * Mark a task as failed and schedule processing of the next pending task.
      *
      * @param int $queueid The queue record ID.
      * @param string $error The error message.
-     * @return array|null Info about the next task if one was started, null otherwise.
+     * @return null Background processor handles the next task.
      */
     public static function fail(int $queueid, string $error): ?array {
         $task = queue_repository::get_by_id($queueid);
@@ -143,7 +129,9 @@ class queue_service {
             self::update_task_params($task, ['error' => $error]);
         });
 
-        return self::start_next((int) $task->courseid);
+        self::schedule_queue_processing((int) $task->courseid);
+
+        return null;
     }
 
     /**
@@ -180,7 +168,7 @@ class queue_service {
             $task->status = queue_status::STATUS_CANCELLED;
             $task->timecompleted = time();
             queue_repository::update($task);
-            self::start_next((int) $task->courseid);
+            self::schedule_queue_processing((int) $task->courseid);
             return true;
         }
 
@@ -218,16 +206,20 @@ class queue_service {
     }
 
     /**
-     * Start the next pending task for a course.
+     * Process the next pending generate task: ensure file sync, then submit to the API.
      *
-     * Uses iteration instead of recursion to safely process tasks
-     * when API submissions fail.
+     * Called from the adhoc queue processor. Processes one successful promotion per run;
+     * skips invalid pending rows and retries the next on sync/API failure.
      *
      * @param int $courseid The course ID.
-     * @return array|null Task info with job_id if started, null if no pending tasks.
+     * @param int $fallbackuserid User ID from the adhoc task when task params lack submittedby.
+     * @return array|null Task info with job_id if started, null if no pending tasks or already processing.
      */
-    public static function start_next(int $courseid): ?array {
-        // Iterate through pending tasks until one succeeds or none remain.
+    public static function process_next_pending(int $courseid, int $fallbackuserid = 0): ?array {
+        if (self::has_active_job($courseid)) {
+            return null;
+        }
+
         while (true) {
             $task = queue_repository::get_next_pending($courseid, queue_status::STATUS_PENDING);
 
@@ -255,6 +247,25 @@ class queue_service {
                 continue;
             }
 
+            $userid = self::resolve_submitter_userid($task, $fallbackuserid);
+            if ($userid <= 0) {
+                $task->status = queue_status::STATUS_FAILED;
+                $task->timecompleted = time();
+                self::update_task_params($task, ['error' => 'Missing submitter user for file sync.']);
+                queue_repository::update($task);
+                continue;
+            }
+
+            try {
+                service_factory::get_file_sync_service()->ensure_enabled_and_synchronized($courseid, $userid);
+            } catch (\Throwable $e) {
+                $task->status = queue_status::STATUS_FAILED;
+                $task->timecompleted = time();
+                self::update_task_params($task, ['error' => $e->getMessage()]);
+                queue_repository::update($task);
+                continue;
+            }
+
             try {
                 $result = self::submit_to_api(
                     $task->modulename,
@@ -263,7 +274,6 @@ class queue_service {
                     $task->sectionnumber
                 );
 
-                // Update task to PROCESSING.
                 $task->status = queue_status::STATUS_PROCESSING;
                 $task->jobid = $result->jobid;
                 $task->timestarted = time();
@@ -280,14 +290,24 @@ class queue_service {
                 ];
 
             } catch (\Exception $e) {
-                // API submission failed - mark this task as failed and continue loop.
                 $task->status = queue_status::STATUS_FAILED;
                 $task->timecompleted = time();
                 self::update_task_params($task, ['error' => $e->getMessage()]);
                 queue_repository::update($task);
-                // Loop continues to try the next pending task.
             }
         }
+    }
+
+    /**
+     * Start the next pending task for a course (synchronous; used in tests).
+     *
+     * @param int $courseid The course ID.
+     * @return array|null Task info with job_id if started, null if no pending tasks.
+     */
+    public static function start_next(int $courseid): ?array {
+        global $USER;
+        $userid = (int) ($USER->id ?? 0);
+        return self::process_next_pending($courseid, $userid);
     }
 
     /**
@@ -304,6 +324,7 @@ class queue_service {
      * @param int|null $sectionnumber Section number.
      * @param int|null $beforemod Course module to insert before.
      * @param string|null $lang Language code.
+     * @param int|null $submittedby User who submitted the generate request (for file sync).
      * @return int The queue record ID.
      */
     protected static function add_task(
@@ -314,7 +335,8 @@ class queue_service {
         ?string $jobid = null,
         ?int $sectionnumber = null,
         ?int $beforemod = null,
-        ?string $lang = null
+        ?string $lang = null,
+        ?int $submittedby = null
     ): int {
         $record = queue_repository::create_base_record(
             $courseid,
@@ -332,9 +354,42 @@ class queue_service {
             $record->jobid = $jobid;
             $record->params = json_encode(['jobid' => $jobid]);
             $record->timestarted = time();
+        } else if ($submittedby !== null && $submittedby > 0) {
+            $record->params = json_encode(['submittedby' => $submittedby]);
         }
 
         return queue_repository::insert($record);
+    }
+
+    /**
+     * Schedule background queue processing after a terminal state change.
+     *
+     * @param int $courseid The course ID.
+     * @return void
+     */
+    private static function schedule_queue_processing(int $courseid): void {
+        global $USER;
+        $userid = (int) ($USER->id ?? 0);
+        if ($userid > 0) {
+            queue_processor::schedule($courseid, $userid);
+        }
+    }
+
+    /**
+     * Resolve the user ID to use for file sync on a pending task.
+     *
+     * @param object $task Queue row.
+     * @param int $fallbackuserid Fallback from adhoc custom data.
+     * @return int User ID or 0 if unknown.
+     */
+    private static function resolve_submitter_userid(object $task, int $fallbackuserid): int {
+        if (!empty($task->params)) {
+            $params = json_decode($task->params, true);
+            if (is_array($params) && !empty($params['submittedby'])) {
+                return (int) $params['submittedby'];
+            }
+        }
+        return $fallbackuserid;
     }
 
     /**
@@ -375,7 +430,7 @@ class queue_service {
         int $courseid,
         ?int $sectionnumber
     ): object {
-        return (new module_generation_service())->submit_generate_job_for_course(
+        return service_factory::get_module_generation_service()->submit_generate_job_for_course(
             $modulename,
             $instructions,
             $courseid,

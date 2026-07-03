@@ -107,6 +107,7 @@ $string['manual_upload_resource_description'] = 'Formats acceptés : {$a->ragfor
 $string['task_completed_success'] = 'Activité « <a href="{$a->link}">{$a->name}</a> » créée.';
 $string['manual_upload_success'] = 'Activité « <a href="{$a->link}">{$a->name}</a> » ajoutée. La synchronisation des fichiers a démarré.';
 $string['task_failed'] = 'Échec de la génération du module : {$a->error}';
+$string['task_process_modulegen_queue'] = 'Traiter la file d\'attente de génération de modules Dixeo';
 $string['queue_manual_upload_label'] = 'Téléversement manuel';
 
 // SCORM upload.

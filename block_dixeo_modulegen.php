@@ -167,7 +167,7 @@ class block_dixeo_modulegen extends block_base {
      * @return bool True on success, false on failure.
      */
     public function instance_create(): bool {
-        global $DB;
+        global $DB, $USER;
 
         $bi = $DB->get_record('block_instances', ['id' => $this->instance->id]);
         if (!$bi) {
@@ -178,6 +178,18 @@ class block_dixeo_modulegen extends block_base {
         $bi->pagetypepattern = self::DEFAULT_PAGETYPE_PATTERN;
         $bi->defaultweight = self::DEFAULT_WEIGHT;
 
-        return $DB->update_record('block_instances', $bi);
+        $updated = $DB->update_record('block_instances', $bi);
+
+        $courseid = \local_dixeo\service\file_sync_policy::resolve_courseid_from_block_parent(
+            (int) $this->instance->parentcontextid
+        );
+        if ($courseid !== null) {
+            \local_dixeo\external\service_factory::get_file_sync_service()->opt_in_on_block_added(
+                $courseid,
+                (int) $USER->id
+            );
+        }
+
+        return $updated;
     }
 }
