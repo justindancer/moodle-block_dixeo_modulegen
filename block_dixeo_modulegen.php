@@ -11,8 +11,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-use block_dixeo_modulegen\manual_upload_context;
-
 /**
  * Block class for the Dixeo Module Generator.
  *
@@ -34,7 +32,10 @@ class block_dixeo_modulegen extends block_base {
     ];
 
     /** @var string Required capability to view the block. */
-    private const REQUIRED_CAPABILITY = 'moodle/course:manageactivities';
+    private const REQUIRED_CAPABILITY = 'local/dixeo:generate';
+
+    /** @var string Additional capability required to manage course activities. */
+    private const MANAGE_ACTIVITIES_CAPABILITY = 'moodle/course:manageactivities';
 
     /** @var string Default pagetype pattern for block instances. */
     private const DEFAULT_PAGETYPE_PATTERN = 'course-view-*';
@@ -124,14 +125,8 @@ class block_dixeo_modulegen extends block_base {
         $this->content->footer = '';
         $this->content->text = '';
 
-        // Load CSS.
-        $this->page->requires->css('/blocks/dixeo_modulegen/styles.css');
-
-        // Initialize JavaScript and render template.
-        if ($this->page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
-            $this->initialize_javascript($COURSE->id);
-            $this->content->text = $OUTPUT->render_from_template('block_dixeo_modulegen/card', []);
-        }
+        // CSS/AMD are registered early via before_http_headers hook.
+        $this->content->text = $OUTPUT->render_from_template('block_dixeo_modulegen/card', []);
 
         return $this->content;
     }
@@ -144,7 +139,8 @@ class block_dixeo_modulegen extends block_base {
      */
     private function can_user_view_block(int $courseid): bool {
         $context = context_course::instance($courseid);
-        return has_capability(self::REQUIRED_CAPABILITY, $context);
+        return has_capability(self::REQUIRED_CAPABILITY, $context)
+            && has_capability(self::MANAGE_ACTIVITIES_CAPABILITY, $context);
     }
 
     /**
@@ -160,22 +156,6 @@ class block_dixeo_modulegen extends block_base {
             }
         }
         return false;
-    }
-
-    /**
-     * Initialize JavaScript modules for the block.
-     *
-     * Loads the activitychooser module which initializes queue_status internally.
-     * The ai_action module is initialized by the modal template when rendered.
-     *
-     * @param int $courseid The course ID.
-     */
-    private function initialize_javascript(int $courseid): void {
-        $this->page->requires->js_call_amd(
-            'block_dixeo_modulegen/activitychooser',
-            'init',
-            [$courseid, manual_upload_context::get_js_config()]
-        );
     }
 
     /**

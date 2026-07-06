@@ -1,0 +1,16 @@
+{{!
+    Copy-instructions control shown to the right of task status on row hover.
+
+    @template block_dixeo_modulegen/task_copy_instructions
+    @package    block_dixeo_modulegen
+}}
+{{#hasinstructions}}
+    <button type="button"
+        class="task-copy-instructions-button btn btn-link p-0"
+        data-copy-label="{{#str}}copyinstructions, block_dixeo_modulegen{{/str}}"
+        data-copied-label="{{#str}}instructionscopied, block_dixeo_modulegen{{/str}}"
+        title="{{#str}}copyinstructions, block_dixeo_modulegen{{/str}}"
+        aria-label="{{#str}}copyinstructions, block_dixeo_modulegen{{/str}}">
+        <i class="fa fa-copy task-copy-instructions-button__icon" aria-hidden="true"></i>
+    </button>
+{{/hasinstructions}}

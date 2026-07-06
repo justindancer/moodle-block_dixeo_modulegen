@@ -7,10 +7,11 @@
  */
 define([
     'jquery',
-    'core/notification',
     'core/str',
-    'block_dixeo_modulegen/course_section_refresh'
-], function($, Notification, Str, CourseSectionRefresh) {
+    'block_dixeo_modulegen/course_section_refresh',
+    'block_dixeo_modulegen/job_manager',
+    'block_dixeo_modulegen/generation_notifications'
+], function($, Str, CourseSectionRefresh, JobManager, GenerationNotifications) {
     'use strict';
 
     /** @type {Object|null} Config from PHP init (upload URL, sesskey, description params). */
@@ -21,6 +22,155 @@ define([
 
     /** @type {boolean} */
     let isModalClosingDisabled = false;
+
+    /**
+     * @param {string} filename
+     * @returns {string} Lowercase extension without dot, or empty string.
+     */
+    const getFileExtension = (filename) => {
+        const base = (filename || '').split(/[/\\]/).pop() || '';
+        const dot = base.lastIndexOf('.');
+        if (dot <= 0) {
+            return '';
+        }
+        return base.substring(dot + 1).toLowerCase();
+    };
+
+    /**
+     * @param {File} file
+     * @param {string} modtype
+     * @returns {{key: string, component: string, param?: Object}|null}
+     */
+    const validateUploadFile = (file, modtype) => {
+        if (!file) {
+            return null;
+        }
+
+        if (modtype === 'scorm') {
+            if (getFileExtension(file.name) !== 'zip') {
+                return {key: 'manual_upload_error_invalid_scorm', component: 'block_dixeo_modulegen'};
+            }
+            return null;
+        }
+
+        if (modtype === 'resource') {
+            const maxSize = uploadConfig && uploadConfig.maxResourceFileSize;
+            if (maxSize && file.size > maxSize) {
+                return {
+                    key: 'manual_upload_error_file_too_large',
+                    component: 'block_dixeo_modulegen',
+                    param: (uploadConfig && uploadConfig.resourceDescriptionParams) || {},
+                };
+            }
+            const extensions = (uploadConfig && uploadConfig.ragExtensions) || [];
+            const ext = getFileExtension(file.name);
+            if (!extensions.includes(ext)) {
+                return {
+                    key: 'manual_upload_error_invalid_resource',
+                    component: 'block_dixeo_modulegen',
+                    param: (uploadConfig && uploadConfig.resourceDescriptionParams) || {ragformats: ext},
+                };
+            }
+            return null;
+        }
+
+        return null;
+    };
+
+    /**
+     * Hide the inline error region inside the modal body.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const clearModalError = (form) => {
+        const errorEl = form ? form.querySelector('#manual-upload-error') : null;
+        if (!errorEl) {
+            return;
+        }
+        errorEl.textContent = '';
+        errorEl.classList.add('d-none');
+    };
+
+    /**
+     * Show an error inside the modal body (not as a page-level notification).
+     *
+     * @param {HTMLFormElement} form
+     * @param {string} message
+     */
+    const showModalError = (form, message) => {
+        if (!form || !message) {
+            return;
+        }
+        const errorEl = form.querySelector('#manual-upload-error');
+        if (!errorEl) {
+            return;
+        }
+        errorEl.textContent = message;
+        errorEl.classList.remove('d-none');
+    };
+
+    /**
+     * @param {HTMLFormElement} form
+     * @param {{key: string, component: string, param?: Object}} error
+     * @returns {Promise<void>}
+     */
+    const showValidationError = async(form, error) => {
+        const message = await Str.get_string(error.key, error.component, error.param || {});
+        showModalError(form, message);
+    };
+
+    /**
+     * Clear the file input and filename display.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const clearFileSelection = (form) => {
+        const fileInput = form.querySelector('#manual-upload-file');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        setSelectedFile(form, null);
+    };
+
+    /**
+     * Validate then show or reject a selected file.
+     *
+     * @param {HTMLFormElement} form
+     * @param {File|null} file
+     * @returns {Promise<void>}
+     */
+    const validateAndSelectFile = async(form, file) => {
+        if (!file) {
+            clearFileSelection(form);
+            clearModalError(form);
+            return;
+        }
+
+        const modtypeInput = form.querySelector('#manual-upload-modtype');
+        const modtype = modtypeInput ? modtypeInput.value : '';
+        const error = validateUploadFile(file, modtype);
+        if (error) {
+            clearFileSelection(form);
+            await showValidationError(form, error);
+            return;
+        }
+
+        clearModalError(form);
+        setSelectedFile(form, file);
+    };
+
+    /**
+     * Build a file input accept attribute from extension list.
+     *
+     * @param {string[]} extensions
+     * @returns {string}
+     */
+    const buildAcceptAttribute = (extensions) => {
+        if (!extensions || !extensions.length) {
+            return '';
+        }
+        return extensions.map((ext) => '.' + ext).join(',');
+    };
 
     /**
      * Per-type modal configuration.
@@ -34,8 +184,6 @@ define([
             titleComponent: 'mod_scorm',
             descriptionString: 'manual_upload_scorm_description',
             descriptionComponent: 'block_dixeo_modulegen',
-            fileHelpString: 'scorm_package_help',
-            fileHelpComponent: 'block_dixeo_modulegen',
         },
         resource: {
             modtype: 'resource',
@@ -43,9 +191,55 @@ define([
             titleComponent: 'mod_resource',
             descriptionString: 'manual_upload_resource_description',
             descriptionComponent: 'block_dixeo_modulegen',
-            fileHelpString: null,
-            fileHelpComponent: null,
         },
+    };
+
+    /**
+     * Show upload-in-progress state in the modal body.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const showUploadLoading = (form) => {
+        const content = form.querySelector('#manual-upload-content');
+        const loading = form.querySelector('#manual-upload-loading');
+        const errorEl = form.querySelector('#manual-upload-error');
+        const footerContent = form.querySelector('#manual-upload-footer-content');
+
+        if (errorEl) {
+            errorEl.classList.add('d-none');
+        }
+        if (content) {
+            content.classList.add('d-none');
+        }
+        if (loading) {
+            loading.classList.remove('d-none');
+            loading.setAttribute('aria-busy', 'true');
+        }
+        if (footerContent) {
+            footerContent.classList.add('d-none');
+        }
+    };
+
+    /**
+     * Restore the normal modal body after upload completes or fails.
+     *
+     * @param {HTMLFormElement} form
+     */
+    const hideUploadLoading = (form) => {
+        const content = form.querySelector('#manual-upload-content');
+        const loading = form.querySelector('#manual-upload-loading');
+        const footerContent = form.querySelector('#manual-upload-footer-content');
+
+        if (content) {
+            content.classList.remove('d-none');
+        }
+        if (loading) {
+            loading.classList.add('d-none');
+            loading.setAttribute('aria-busy', 'false');
+        }
+        if (footerContent) {
+            footerContent.classList.remove('d-none');
+        }
     };
 
     /**
@@ -55,6 +249,8 @@ define([
      */
     const resetForm = (form) => {
         form.reset();
+        clearModalError(form);
+        hideUploadLoading(form);
         const filenameEl = form.querySelector('#manual-upload-filename');
         if (filenameEl) {
             filenameEl.textContent = '';
@@ -190,7 +386,7 @@ define([
                     return;
                 }
                 assignFileToInput(fileInput, files[0]);
-                setSelectedFile(form, files[0]);
+                validateAndSelectFile(form, files[0]);
             });
 
             if (browseButton) {
@@ -201,7 +397,7 @@ define([
 
             fileInput.addEventListener('change', () => {
                 const file = fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
-                setSelectedFile(form, file);
+                validateAndSelectFile(form, file);
             });
         },
 
@@ -234,7 +430,6 @@ define([
             const sectionInput = form.querySelector('#manual-upload-sectionnumber');
             const beforeModInput = form.querySelector('#manual-upload-beforemod');
             const fileInput = form.querySelector('#manual-upload-file');
-            const fileHelp = form.querySelector('#manual-upload-file-help');
             const descriptionEl = form.querySelector('#manual-upload-description');
             const titleEl = modal.querySelector('.modal-title');
 
@@ -248,7 +443,11 @@ define([
                 beforeModInput.value = beforeMod;
             }
             if (fileInput) {
-                fileInput.accept = typeConfig.accept || '';
+                if (typeConfig.modtype === 'resource') {
+                    fileInput.accept = buildAcceptAttribute(uploadConfig.ragExtensions || []);
+                } else {
+                    fileInput.accept = typeConfig.accept || '';
+                }
             }
 
             const titlePromise = Str.get_string('modulename', typeConfig.titleComponent)
@@ -262,14 +461,9 @@ define([
                 )
                 : Str.get_string(typeConfig.descriptionString, typeConfig.descriptionComponent);
 
-            const fileHelpPromise = typeConfig.fileHelpString
-                ? Str.get_string(typeConfig.fileHelpString, typeConfig.fileHelpComponent)
-                : Promise.resolve('');
-
-            const [title, description, helpText] = await Promise.all([
+            const [title, description] = await Promise.all([
                 titlePromise,
                 descriptionPromise,
-                fileHelpPromise,
             ]);
 
             if (titleEl) {
@@ -277,10 +471,7 @@ define([
             }
             if (descriptionEl) {
                 descriptionEl.textContent = description;
-            }
-            if (fileHelp) {
-                fileHelp.textContent = helpText;
-                fileHelp.classList.toggle('d-none', !helpText);
+                descriptionEl.classList.toggle('d-none', !description);
             }
         },
 
@@ -290,25 +481,35 @@ define([
          * @param {Event} event
          * @param {HTMLFormElement} form
          */
-        handleFormSubmit: function(event, form) {
+        handleFormSubmit: async function(event, form) {
             event.preventDefault();
 
             const submitButton = form.querySelector('#manual_upload_submit');
             const closeButton = form.querySelector('.close');
-            const nameInput = form.querySelector('#manual-upload-name');
             const fileInput = form.querySelector('#manual-upload-file');
+            const modtypeInput = form.querySelector('#manual-upload-modtype');
 
             if (!uploadConfig || !uploadConfig.uploadUrl || !uploadConfig.sesskey) {
-                Notification.exception({message: 'Manual upload is not configured.'});
+                showModalError(form, 'Manual upload is not configured.');
                 return;
             }
 
-            if (!nameInput || !nameInput.value.trim() || !fileInput || !fileInput.files || !fileInput.files.length) {
-                Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen').then((message) => {
-                    Notification.alert('', message);
-                });
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                const message = await Str.get_string('manual_upload_error_missing', 'block_dixeo_modulegen');
+                showModalError(form, message);
                 return;
             }
+
+            const file = fileInput.files[0];
+            const modtype = modtypeInput ? modtypeInput.value : '';
+            const validationError = validateUploadFile(file, modtype);
+            if (validationError) {
+                await showValidationError(form, validationError);
+                return;
+            }
+
+            clearModalError(form);
+            showUploadLoading(form);
 
             isModalClosingDisabled = true;
             if (submitButton) {
@@ -325,11 +526,11 @@ define([
             formData.append('courseid', form.querySelector('#manual-upload-courseid').value);
             formData.append('sectionnumber', form.querySelector('#manual-upload-sectionnumber').value);
             formData.append('beforemod', form.querySelector('#manual-upload-beforemod').value);
-            formData.append('name', nameInput.value.trim());
             formData.append('file', fileInput.files[0]);
 
             const restoreUi = () => {
                 isModalClosingDisabled = false;
+                hideUploadLoading(form);
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -356,16 +557,26 @@ define([
 
                     const sectionNumber = parseInt(form.querySelector('#manual-upload-sectionnumber').value, 10);
                     const cmid = body.cmid ? parseInt(body.cmid, 10) : 0;
+                    const courseid = body.courseid ? parseInt(body.courseid, 10) : 0;
+
+                    GenerationNotifications.showManualUploadSuccess({
+                        link: body.link || '',
+                        name: body.activityname || '',
+                        courseid: courseid,
+                    });
+
+                    JobManager.getQueueStatus(true);
+                    document.dispatchEvent(new Event('newTaskAdded'));
+
                     CourseSectionRefresh.dispatchJobCompleted({
                         cmid: cmid,
                         sectionNumber: sectionNumber,
+                        source: 'manual',
                     });
                 })
                 .catch((error) => {
                     restoreUi();
-                    Str.get_string('error_title', 'block_dixeo_modulegen').then((title) => {
-                        Notification.alert(title, error.message || String(error));
-                    });
+                    showModalError(form, error.message || String(error));
                 });
         },
     };

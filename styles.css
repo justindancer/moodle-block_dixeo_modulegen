@@ -23,7 +23,7 @@
  *   3. Status bar & footer
  *   4. Queue (expanded panel, header, filters, task list)
  *   5. Activity chooser (options, categories, drag-drop)
- *   6. Generation modal (body bg: --dixeo-modulegen-modal-body-bg)
+ *   6. Module generator modals (generation + manual upload; body bg: --dixeo-modulegen-modal-body-bg)
  *   7. Context overrides (editing mode, course view, drop-target highlight on cm items)
  *   8. Media queries
  *
@@ -348,9 +348,41 @@
     padding: 0.25rem 0;
 }
 
-/* Instructions: hover over status area (wrapper) shows tooltip; no icon. */
+/* Instructions: hover over status area shows tooltip; copy icon copies text. */
 .task-list .task-instructions-trigger-wrapper {
     vertical-align: middle;
+    gap: 0.25rem;
+}
+
+.task-list .task-copy-instructions-button {
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+    color: var(--dixeo-modulegen-text-muted);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, visibility 0.15s ease, color 0.15s ease;
+}
+
+.task-list .task-item:hover .task-copy-instructions-button,
+.task-list .task-copy-instructions-button:focus-visible,
+.task-list .task-copy-instructions-button--done {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.task-list .task-copy-instructions-button:hover,
+.task-list .task-copy-instructions-button:focus {
+    color: var(--dixeo-modulegen-text-muted);
+    text-decoration: none;
+}
+
+.task-list .task-copy-instructions-button--done,
+.task-list .task-copy-instructions-button--done:hover,
+.task-list .task-copy-instructions-button--done:focus {
+    color: #16a34a;
 }
 
 /* Instructions tooltip (shown on hover, created in JS; appended to body so use fallbacks). */
@@ -371,6 +403,27 @@
     white-space: pre-wrap;
     word-break: break-word;
     pointer-events: auto;
+    user-select: text;
+    cursor: text;
+}
+
+/* Invisible hover bridge so the pointer can reach the tooltip without it closing. */
+.task-instructions-tooltip--below::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+}
+
+.task-instructions-tooltip--above::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
 }
 
 .block_dixeo_modulegen #module-generator-options a.disabled {
@@ -556,11 +609,12 @@
 }
 
 /* ==========================================================================
-   6. GENERATION MODAL
+   6. MODULE GENERATOR MODALS (generation + manual upload)
    ========================================================================== */
 
-/* Modal is moved to body by JS, so it needs its own tokens (theme fallbacks). */
-#generationModal {
+/* Modals are moved to body by JS, so they need their own tokens (theme fallbacks). */
+#generationModal,
+#manualUploadModal {
     --dixeo-modulegen-bg: hsl(var(--background, 0 0% 100%));
     --dixeo-modulegen-bg-muted: hsl(var(--muted, 210 40% 96.1%));
     --dixeo-modulegen-bg-muted-hover: #e9ecef;
@@ -580,21 +634,31 @@
     --dixeo-modulegen-modal-body-bg: #eff6ff;
 }
 
-#generationModal #instructions {
-    font-size: 16px;
-    overflow-y: hidden;
-    min-height: 60px;
-    max-height: 200px;
+#generationModal .modal-content,
+#manualUploadModal .modal-content {
+    border-radius: 1.2rem;
 }
 
-#generationModal #prompt-form textarea {
-    border: none;
-    padding: 20px;
-    min-height: 90px;
-    box-shadow: var(--dixeo-modulegen-shadow-md);
+#generationModal .modal-header,
+#manualUploadModal .modal-header {
+    width: 100%;
 }
 
-#generationModal #generate_button {
+#generationModal .modal-title,
+#manualUploadModal .modal-title {
+    width: 100%;
+    font-size: 30px;
+    color: var(--primary, var(--dixeo-blue, #108df0));
+}
+
+#generationModal .modal-body,
+#manualUploadModal .modal-body {
+    padding: 50px;
+    background-color: var(--dixeo-modulegen-modal-body-bg);
+}
+
+#generationModal #generate_button,
+#manualUploadModal #manual_upload_submit {
     right: 3%;
     height: 35px;
     padding: 5px 10px;
@@ -603,61 +667,48 @@
 }
 
 #generationModal #generate_button:focus,
-#generationModal #generate_button.focus {
+#generationModal #generate_button.focus,
+#manualUploadModal #manual_upload_submit:focus,
+#manualUploadModal #manual_upload_submit.focus {
     box-shadow: none;
 }
 
-#generationModal #generate_button img {
+#generationModal #generate_button img,
+#manualUploadModal #manual_upload_submit img {
     position: relative;
     display: inline-block;
     margin: 0 0 3px 0;
 }
 
-#generationModal .modal-content {
-    border-radius: 1.2rem;
-}
-
-#generationModal .modal-header {
-    width: 100%;
-}
-
-#generationModal .modal-title {
-    width: 100%;
-    font-size: 30px;
-    color: var(--primary, var(--dixeo-blue, #108df0));
-}
-
-#generationModal .modal-body {
-    padding: 50px;
-    background-color: var(--dixeo-modulegen-modal-body-bg);
+#generationModal #instructions {
+    font-size: 16px;
+    overflow-y: hidden;
+    min-height: 90px;
+    max-height: 200px;
+    border: 1px solid var(--dixeo-modulegen-border-light, #f1efef);
+    padding: 20px;
 }
 
 #generationModal .p64 {
     padding: 15px 0 25px 0;
 }
 
-/* Manual upload modal (moved to body by JS). */
-#manualUploadModal {
-    --dixeo-modulegen-modal-body-bg: #eff6ff;
-}
-
-#manualUploadModal .modal-content {
-    border-radius: 1.2rem;
-}
-
-#manualUploadModal .modal-title {
-    width: 100%;
-    font-size: 30px;
-    color: var(--primary, var(--dixeo-blue, #108df0));
-}
-
-#manualUploadModal .modal-body {
-    padding: 2rem;
-    background-color: var(--dixeo-modulegen-modal-body-bg);
+#manualUploadModal .manual-upload-loading {
+    min-height: 8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 #manualUploadModal .manual-upload-description {
     line-height: 1.5;
+}
+
+#manualUploadModal #manual-upload-name {
+    font-size: 16px;
+    border: 1px solid var(--dixeo-modulegen-border-light, #f1efef);
+    padding: 20px;
 }
 
 #manualUploadModal .manual-upload-dropzone {
@@ -671,11 +722,6 @@
 #manualUploadModal .manual-upload-dropzone.drag-over {
     border-color: var(--dixeo-modulegen-primary, #108df0) !important;
     background-color: var(--dixeo-modulegen-bg-muted, #f8f9fa);
-}
-
-#manualUploadModal #manual_upload_submit {
-    font-weight: 700;
-    background-color: var(--dixeo-modulegen-primary, #108df0);
 }
 
 /* ==========================================================================

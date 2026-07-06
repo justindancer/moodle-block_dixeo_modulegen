@@ -21,8 +21,9 @@ define([
     'block_dixeo_modulegen/job_manager',
     'block_dixeo_modulegen/queue_status',
     'block_dixeo_modulegen/ai_action',
-    'block_dixeo_modulegen/manual_upload_action'
-], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction, ManualUploadAction) {
+    'block_dixeo_modulegen/manual_upload_action',
+    'block_dixeo_modulegen/generation_notifications'
+], function(Templates, Ajax, Str, JobManager, QueueStatus, AiAction, ManualUploadAction, GenerationNotifications) {
     'use strict';
 
     let initialized = false;
@@ -101,6 +102,7 @@ define([
             // Create category if it doesn't exist.
             if (!categoryMap[category]) {
                 categoryMap[category] = {
+                    key: category,
                     name: categoryStrings[category] || category,
                     items: []
                 };
@@ -142,51 +144,47 @@ define([
     };
 
     /**
-     * Append the Manual upload category when SCORM and/or File mods are installed.
+     * Add SCORM and File upload options to the Content category when those mods are installed.
      *
      * @param {Array} categoriesArray Existing categories from API transform.
      * @param {Object} manualConfig Config from PHP (scormInstalled, resourceInstalled).
-     * @returns {Promise<Array>} Categories with manual upload appended when applicable.
+     * @returns {Promise<Array>} Categories with upload items merged into Content when applicable.
      */
-    const appendManualUploadCategory = async(categoriesArray, manualConfig) => {
+    const appendManualUploadToContent = async(categoriesArray, manualConfig) => {
         if (!manualConfig || (!manualConfig.scormInstalled && !manualConfig.resourceInstalled)) {
             return categoriesArray;
         }
 
-        const stringRequests = [
-            Str.get_string('category_manual_upload', 'block_dixeo_modulegen'),
-        ];
-        if (manualConfig.scormInstalled) {
-            stringRequests.push(Str.get_string('modulename', 'mod_scorm'));
-        }
+        const stringRequests = [Str.get_string('category_content', 'block_dixeo_modulegen')];
         if (manualConfig.resourceInstalled) {
             stringRequests.push(Str.get_string('modulename', 'mod_resource'));
+        }
+        if (manualConfig.scormInstalled) {
+            stringRequests.push(Str.get_string('modulename', 'mod_scorm'));
         }
 
         const strings = await Promise.all(stringRequests);
         let index = 0;
-        const categoryName = strings[index++];
+        const contentCategoryName = strings[index++];
 
-        const items = [];
-        if (manualConfig.scormInstalled) {
-            const displayname = strings[index++];
-            items.push({
-                shortname: 'scorm',
-                displayname: displayname,
-                iconurl: M.cfg.wwwroot + '/mod/scorm/pix/monologo.svg',
-                manualUploadType: 'scorm',
-                installed: true,
-                component: 'mod_scorm',
-                options: {
-                    href: '#',
-                    enabled: true,
-                    modalTarget: '#manualUploadModal',
-                },
-            });
+        let contentCategory = categoriesArray.find((category) => category.key === 'content');
+        if (!contentCategory) {
+            contentCategory = {
+                key: 'content',
+                name: contentCategoryName,
+                items: [],
+            };
+            categoriesArray.unshift(contentCategory);
         }
+
+        contentCategory.items = contentCategory.items.filter(
+            (item) => item.shortname !== 'scorm' && item.shortname !== 'resource'
+        );
+
+        const uploadItems = [];
         if (manualConfig.resourceInstalled) {
             const displayname = strings[index++];
-            items.push({
+            uploadItems.push({
                 shortname: 'resource',
                 displayname: displayname,
                 iconurl: M.cfg.wwwroot + '/mod/resource/pix/monologo.svg',
@@ -200,15 +198,26 @@ define([
                 },
             });
         }
-
-        if (!items.length) {
-            return categoriesArray;
+        if (manualConfig.scormInstalled) {
+            const displayname = strings[index++];
+            uploadItems.push({
+                shortname: 'scorm',
+                displayname: displayname,
+                iconurl: M.cfg.wwwroot + '/mod/scorm/pix/monologo.svg',
+                manualUploadType: 'scorm',
+                installed: true,
+                component: 'mod_scorm',
+                options: {
+                    href: '#',
+                    enabled: true,
+                    modalTarget: '#manualUploadModal',
+                },
+            });
         }
 
-        return categoriesArray.concat([{
-            name: categoryName,
-            items: items,
-        }]);
+        contentCategory.items.push(...uploadItems);
+
+        return categoriesArray;
     };
 
     /**
@@ -251,7 +260,7 @@ define([
         const available = await getAvailableModules(courseId);
 
         course = courseId;
-        categories = await appendManualUploadCategory(available.categories, manualUploadConfig || {});
+        categories = await appendManualUploadToContent(available.categories, manualUploadConfig || {});
 
         // Ensure we only add our listeners once.
         if (initialized) {
@@ -293,6 +302,7 @@ define([
                 // This must complete before other modules try to submit/poll jobs.
                 JobManager.init(course)
                     .then(() => {
+                        GenerationNotifications.init(course);
                         // Initialize UI modules after job manager is ready.
                         QueueStatus.init(course, categories);
                         AiAction.init();
@@ -305,6 +315,7 @@ define([
                         // Graceful degradation - still initialize UI but log warning.
                         // eslint-disable-next-line no-console
                         console.error('JobManager init failed:', error);
+                        GenerationNotifications.init(course);
                         QueueStatus.init(course, categories);
                         AiAction.init();
                         ManualUploadAction.init(manualUploadConfig || {});

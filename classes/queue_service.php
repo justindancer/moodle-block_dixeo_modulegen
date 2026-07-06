@@ -235,12 +235,21 @@ class queue_service {
                 return null;
             }
 
-            // Fill-mode rows are terminal logs only; never run through the generate API.
+            // Terminal log rows (fill / manual) must never run through the generate API.
             if (queue_task_mode::is_fill($task->params ?? null)) {
                 $task->status = queue_status::STATUS_FAILED;
                 $task->timecompleted = time();
                 self::update_task_params($task, [
                     'error' => 'Invalid queue state: fill tasks cannot be pending.',
+                ]);
+                queue_repository::update($task);
+                continue;
+            }
+            if (queue_task_mode::is_manual($task->params ?? null)) {
+                $task->status = queue_status::STATUS_FAILED;
+                $task->timecompleted = time();
+                self::update_task_params($task, [
+                    'error' => 'Invalid queue state: manual upload tasks cannot be pending.',
                 ]);
                 queue_repository::update($task);
                 continue;
@@ -427,6 +436,43 @@ class queue_service {
     }
 
     /**
+     * Insert a completed manual-upload log row (terminal; does not start queue processing).
+     *
+     * @param int|null $beforemod Insert-before cm id or null.
+     */
+    public static function log_manual_upload_completed(
+        int $courseid,
+        string $modulename,
+        int $sectionnumber,
+        ?int $beforemod,
+        int $cmid,
+        string $displaytitle,
+        string $filename
+    ): int {
+        $lang = current_language();
+        $record = queue_repository::create_base_record(
+            $courseid,
+            $modulename,
+            get_string('queue_manual_upload_label', 'block_dixeo_modulegen'),
+            $sectionnumber,
+            $beforemod,
+            $lang
+        );
+        $record->title = clean_param($displaytitle, PARAM_TEXT);
+        $record->status = queue_status::STATUS_COMPLETED;
+        $record->cmid = $cmid;
+        $jobid = \core\uuid::generate();
+        $record->jobid = $jobid;
+        $record->timecompleted = time();
+        $record->params = json_encode(self::manual_params_payload(
+            $displaytitle,
+            $filename,
+            $jobid
+        ));
+        return queue_repository::insert($record);
+    }
+
+    /**
      * Insert a failed fill log row (retryable from modulegen UI).
      */
     public static function log_fill_failed(
@@ -526,5 +572,21 @@ class queue_service {
             $p['error'] = $error;
         }
         return $p;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function manual_params_payload(
+        string $title,
+        string $filename,
+        string $jobid
+    ): array {
+        return [
+            'mode' => queue_task_mode::MODE_MANUAL,
+            'title' => $title,
+            'filename' => $filename,
+            'dixeo_jobid' => $jobid,
+        ];
     }
 }

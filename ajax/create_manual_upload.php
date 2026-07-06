@@ -36,7 +36,6 @@ try {
     $courseid = required_param('courseid', PARAM_INT);
     $sectionnumber = optional_param('sectionnumber', 0, PARAM_INT);
     $beforemod = optional_param('beforemod', 0, PARAM_INT);
-    $name = required_param('name', PARAM_TEXT);
 
     if (!in_array($modtype, ['scorm', 'resource'], true)) {
         throw new moodle_exception('error_unsupported_module', 'block_dixeo_modulegen', '', $modtype);
@@ -53,14 +52,33 @@ try {
         $courseid,
         $sectionnumber,
         $beforemod ?: null,
-        $name,
         $uploadedfile
+    );
+
+    $cmid = (int) $result['cmid'];
+    $activityname = (string) ($result['name'] ?? '');
+    $filename = clean_param($uploadedfile['name'] ?? '', PARAM_FILE);
+    $link = (new moodle_url('/mod/' . $modtype . '/view.php', ['id' => $cmid]))->out(false);
+
+    $queueid = \block_dixeo_modulegen\queue_service::log_manual_upload_completed(
+        $courseid,
+        $modtype,
+        $sectionnumber,
+        $beforemod ?: null,
+        $cmid,
+        $activityname,
+        $filename
     );
 
     echo json_encode([
         'success' => true,
-        'cmid' => $result['cmid'],
+        'cmid' => $cmid,
         'id' => $result['id'],
+        'queueid' => $queueid,
+        'activityname' => $activityname,
+        'modtype' => $modtype,
+        'link' => $link,
+        'courseid' => $courseid,
     ]);
 } catch (Throwable $e) {
     http_response_code(400);

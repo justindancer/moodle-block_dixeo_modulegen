@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-use block_dixeo_modulegen\manual_upload_context;
+use block_dixeo_modulegen\local\page_assets;
 
 /**
  * Whether the Dixeo module generator block is added to the given course (any instance in course context).
@@ -33,21 +33,27 @@ use block_dixeo_modulegen\manual_upload_context;
  * @return bool
  */
 function block_dixeo_modulegen_course_has_block(int $courseid): bool {
-    global $DB;
+    return page_assets::course_has_block($courseid);
+}
 
-    if ($courseid <= 0) {
-        return false;
-    }
+/**
+ * Whether the page is course content where completion notifications apply.
+ *
+ * @param \moodle_page $page
+ * @return bool
+ */
+function block_dixeo_modulegen_is_course_content_page(\moodle_page $page): bool {
+    return page_assets::is_course_content_page($page);
+}
 
-    $context = \context_course::instance($courseid, IGNORE_MISSING);
-    if (!$context) {
-        return false;
-    }
-
-    return $DB->record_exists('block_instances', [
-        'blockname' => 'dixeo_modulegen',
-        'parentcontextid' => $context->id,
-    ]);
+/**
+ * Load AMD for queue polling and/or the activity chooser on course content pages.
+ *
+ * @param \moodle_page $page
+ * @return void
+ */
+function block_dixeo_modulegen_require_page_amd(\moodle_page $page): void {
+    page_assets::require_for_page($page);
 }
 
 /**
@@ -57,34 +63,24 @@ function block_dixeo_modulegen_course_has_block(int $courseid): bool {
  * @return array<int, array<string, mixed>>
  */
 function block_dixeo_modulegen_add_button_to_teacher_toolbar(\moodle_page $page): array {
-    $path = $page->url->get_path();
-    $allowed = false;
-    foreach (['/course/view.php', '/course/section.php'] as $fragment) {
-        if (str_contains($path, $fragment)) {
-            $allowed = true;
-            break;
-        }
+    if (empty($page->course->id)) {
+        return [];
     }
-    if (!$allowed || empty($page->course->id)) {
+
+    $path = $page->url->get_path();
+    $showbutton = str_contains($path, '/course/view.php') || str_contains($path, '/course/section.php');
+    if (!$showbutton) {
         return [];
     }
 
     $context = \context_course::instance($page->course->id);
-    if (!has_capability('moodle/course:manageactivities', $context)) {
+    if (!has_capability('local/dixeo:generate', $context)
+            || !has_capability('moodle/course:manageactivities', $context)) {
         return [];
     }
 
     if (!block_dixeo_modulegen_course_has_block((int) $page->course->id)) {
         return [];
-    }
-
-    if ($page->requires->should_create_one_time_item_now('block_dixeo_modulegen')) {
-        $page->requires->css('/blocks/dixeo_modulegen/styles.css');
-        $page->requires->js_call_amd(
-            'block_dixeo_modulegen/activitychooser',
-            'init',
-            [$page->course->id, manual_upload_context::get_js_config()]
-        );
     }
 
     $label = get_string('aiactivities', 'block_dixeo_modulegen');

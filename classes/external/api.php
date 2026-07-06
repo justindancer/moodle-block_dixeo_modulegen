@@ -67,6 +67,7 @@ class api extends external_api {
         require_course_login($courseid);
         $context = \context_course::instance($courseid);
         $PAGE->set_context($context);
+        require_capability('local/dixeo:generate', $context);
         require_capability('moodle/course:manageactivities', $context);
         return $context;
     }
@@ -276,7 +277,7 @@ class api extends external_api {
             'sortorder' => new external_value(PARAM_INT, 'Sort order (deprecated)', VALUE_OPTIONAL),
             'description' => new external_value(PARAM_RAW, 'Description', VALUE_OPTIONAL),
             'lang' => new external_value(PARAM_TEXT, 'Language', VALUE_OPTIONAL),
-            'queuemode' => new external_value(PARAM_ALPHA, 'Task mode: generate or fill', VALUE_OPTIONAL),
+            'queuemode' => new external_value(PARAM_ALPHA, 'Task mode: generate, fill, or manual', VALUE_OPTIONAL),
         ], 'Task record');
 
         $stats = new external_single_structure([

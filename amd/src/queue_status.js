@@ -99,6 +99,7 @@ define([
                 queueCloseClick: () => this.collapseQueue(),
                 queueDataUpdate: (event) => this.handleQueueData(event),
                 triggerRefresh: () => this.updateQueueStatistics(),
+                taskAdded: () => this.handleTaskAdded(),
                 beforeUnload: () => this.cleanup(),
                 filterHandler: null
             };
@@ -119,8 +120,8 @@ define([
             document.addEventListener('job-queue-data', this.boundHandlers.queueDataUpdate);
 
             // Listen for job lifecycle events to trigger immediate refresh.
-            document.addEventListener('newTaskAdded', this.boundHandlers.triggerRefresh);
-            document.addEventListener('job-queued', this.boundHandlers.triggerRefresh);
+            document.addEventListener('newTaskAdded', this.boundHandlers.taskAdded);
+            document.addEventListener('job-queued', this.boundHandlers.taskAdded);
             document.addEventListener('job-processing', this.boundHandlers.triggerRefresh);
             document.addEventListener('job-completed', this.boundHandlers.triggerRefresh);
             document.addEventListener('job-failed', this.boundHandlers.triggerRefresh);
@@ -154,8 +155,8 @@ define([
                     }
                 }
                 document.removeEventListener('job-queue-data', this.boundHandlers.queueDataUpdate);
-                document.removeEventListener('newTaskAdded', this.boundHandlers.triggerRefresh);
-                document.removeEventListener('job-queued', this.boundHandlers.triggerRefresh);
+                document.removeEventListener('newTaskAdded', this.boundHandlers.taskAdded);
+                document.removeEventListener('job-queued', this.boundHandlers.taskAdded);
                 document.removeEventListener('job-processing', this.boundHandlers.triggerRefresh);
                 document.removeEventListener('job-completed', this.boundHandlers.triggerRefresh);
                 document.removeEventListener('job-failed', this.boundHandlers.triggerRefresh);
@@ -180,6 +181,34 @@ define([
             // Update queue list if expanded.
             if (this.isExpanded && this.queueContainer) {
                 this.updateQueueList(data);
+            }
+        },
+
+        /**
+         * Expand the queue when a new task is added and refresh visible list/stats.
+         */
+        handleTaskAdded: async function() {
+            this.updateQueueStatistics();
+            await this.expandQueueOnTaskAdded();
+        },
+
+        /**
+         * Open the queue panel when collapsed; refresh the task list when already open.
+         *
+         * @returns {Promise<void>}
+         */
+        expandQueueOnTaskAdded: async function() {
+            if (!this.blockFooter) {
+                return;
+            }
+
+            if (!this.isExpanded) {
+                await this.expandQueue();
+                return;
+            }
+
+            if (this.queueContainer && !this.queueAnimatePending) {
+                this.updateQueueList().catch(() => {});
             }
         },
 
@@ -534,6 +563,8 @@ define([
             task.isnext = false;
 
             // Status display text for template.
+            task.hasinstructions = ((task.instructions || '').trim().length > 0);
+
             if (status === 0) {
                 task.statusdisplay = await Str.get_string('queued', 'block_dixeo_modulegen');
             } else if (status === 3) {
@@ -576,7 +607,80 @@ define([
                 link.addEventListener('click', (e) => this.handleRetryClick(e, link));
             });
 
+            const copyButtons = this.queueContainer.querySelectorAll('.task-copy-instructions-button');
+            copyButtons.forEach((button) => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleCopyInstructions(button);
+                });
+            });
+
             this.bindInstructionsTooltips();
+        },
+
+        /**
+         * Copy task instructions to the clipboard.
+         *
+         * @param {HTMLButtonElement} button - The copy control.
+         */
+        handleCopyInstructions: async function(button) {
+            const wrapper = button.closest('.task-instructions-trigger-wrapper');
+            if (!wrapper) {
+                return;
+            }
+
+            const contentEl = wrapper.querySelector('.task-instructions-content');
+            const text = contentEl ? contentEl.textContent.trim() : '';
+            if (!text) {
+                return;
+            }
+
+            const icon = button.querySelector('.task-copy-instructions-button__icon');
+            const copyLabel = button.dataset.copyLabel || '';
+            const copiedLabel = button.dataset.copiedLabel || '';
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+
+                button.classList.add('task-copy-instructions-button--done');
+                if (icon) {
+                    icon.className = 'fa fa-check task-copy-instructions-button__icon';
+                }
+                if (copiedLabel) {
+                    button.setAttribute('title', copiedLabel);
+                    button.setAttribute('aria-label', copiedLabel);
+                }
+
+                if (button._copyResetTimeout) {
+                    clearTimeout(button._copyResetTimeout);
+                }
+                button._copyResetTimeout = setTimeout(() => {
+                    button.classList.remove('task-copy-instructions-button--done');
+                    if (icon) {
+                        icon.className = 'fa fa-copy task-copy-instructions-button__icon';
+                    }
+                    if (copyLabel) {
+                        button.setAttribute('title', copyLabel);
+                        button.setAttribute('aria-label', copyLabel);
+                    }
+                    button._copyResetTimeout = null;
+                }, 1500);
+            } catch (error) {
+                Notification.exception(error);
+            }
         },
 
         /**
@@ -588,6 +692,9 @@ define([
         handleRetryClick: function(e, link) {
             e.preventDefault();
             const mode = link.getAttribute('data-queue-mode') || 'generate';
+            if (mode === 'manual') {
+                return;
+            }
             if (mode === 'fill') {
                 this.handleFillRetryTask(link);
                 return;
@@ -652,7 +759,8 @@ define([
         },
 
         /**
-         * Bind hover tooltips for task instructions (trigger = status area wrapper, no icon).
+         * Bind hover tooltips for task instructions (trigger = status area wrapper).
+         * Tooltip stays open while hovering the trigger or the tooltip itself so users can scroll/select.
          */
         bindInstructionsTooltips: function() {
             if (!this.queueContainer) {
@@ -660,73 +768,119 @@ define([
             }
 
             const triggers = this.queueContainer.querySelectorAll('.task-instructions-trigger-wrapper');
-            let hideTimeout = null;
-
-            const hideTooltip = () => {
-                hideTimeout = setTimeout(() => {
-                    const el = document.body.querySelector('.task-instructions-tooltip');
-                    if (el) {
-                        el.style.display = 'none';
-                    }
-                    hideTimeout = null;
-                }, 100);
-            };
-
             let tooltipEl = document.body.querySelector('.task-instructions-tooltip');
             if (!tooltipEl) {
                 tooltipEl = document.createElement('div');
                 tooltipEl.className = 'task-instructions-tooltip';
                 tooltipEl.setAttribute('role', 'tooltip');
                 document.body.appendChild(tooltipEl);
-                tooltipEl.addEventListener('mouseenter', () => {
-                    if (hideTimeout) {
-                        clearTimeout(hideTimeout);
-                        hideTimeout = null;
-                    }
-                });
-                tooltipEl.addEventListener('mouseleave', () => hideTooltip());
             }
-            tooltipEl.style.display = 'none';
 
-            const showTooltip = (wrapper, content) => {
-                if (hideTimeout) {
-                    clearTimeout(hideTimeout);
-                    hideTimeout = null;
-                }
-                const text = (content && content.trim()) ? content.trim() : null;
-                if (text) {
-                    tooltipEl.textContent = text;
-                } else {
-                    Str.get_string('noinstructions', 'block_dixeo_modulegen').then((s) => {
-                        tooltipEl.textContent = s;
-                    });
-                }
-                const rect = wrapper.getBoundingClientRect();
-                let top = rect.bottom + 6;
-                let left = rect.left;
-                tooltipEl.style.top = top + 'px';
-                tooltipEl.style.left = left + 'px';
-                tooltipEl.style.display = 'block';
-                requestAnimationFrame(() => {
-                    const tr = tooltipEl.getBoundingClientRect();
-                    if (tr.bottom > window.innerHeight - 8) {
-                        tooltipEl.style.top = (rect.top - tr.height - 6) + 'px';
-                    }
-                    if (tr.right > window.innerWidth - 8) {
-                        tooltipEl.style.left = (window.innerWidth - tr.width - 8) + 'px';
-                    }
-                    if (parseInt(tooltipEl.style.left, 10) < 8) {
-                        tooltipEl.style.left = '8px';
-                    }
+            if (!tooltipEl._instructionsTooltipState) {
+                tooltipEl._instructionsTooltipState = {
+                    hideTimeout: null,
+                    isHoveringTooltip: false,
+                    isHoveringTrigger: false,
+                };
+
+                tooltipEl.addEventListener('mouseenter', () => {
+                    const state = tooltipEl._instructionsTooltipState;
+                    state.isHoveringTooltip = true;
+                    this.clearInstructionsTooltipHide(state);
                 });
-            };
+                tooltipEl.addEventListener('mouseleave', () => {
+                    const state = tooltipEl._instructionsTooltipState;
+                    state.isHoveringTooltip = false;
+                    this.scheduleInstructionsTooltipHide(state, tooltipEl);
+                });
+            }
+
+            const state = tooltipEl._instructionsTooltipState;
+            this.clearInstructionsTooltipHide(state);
+            tooltipEl.style.display = 'none';
 
             triggers.forEach((wrapper) => {
                 const contentEl = wrapper.querySelector('.task-instructions-content');
                 const content = contentEl ? contentEl.textContent : '';
 
-                wrapper.addEventListener('mouseenter', () => showTooltip(wrapper, content));
-                wrapper.addEventListener('mouseleave', () => hideTooltip());
+                wrapper.addEventListener('mouseenter', () => {
+                    state.isHoveringTrigger = true;
+                    this.clearInstructionsTooltipHide(state);
+                    this.showInstructionsTooltip(tooltipEl, wrapper, content);
+                });
+                wrapper.addEventListener('mouseleave', () => {
+                    state.isHoveringTrigger = false;
+                    this.scheduleInstructionsTooltipHide(state, tooltipEl);
+                });
+            });
+        },
+
+        /**
+         * Cancel a pending instructions-tooltip hide.
+         *
+         * @param {Object} state - Shared tooltip hover state.
+         */
+        clearInstructionsTooltipHide: function(state) {
+            if (state.hideTimeout) {
+                clearTimeout(state.hideTimeout);
+                state.hideTimeout = null;
+            }
+        },
+
+        /**
+         * Hide the instructions tooltip after a short delay unless still hovered.
+         *
+         * @param {Object} state - Shared tooltip hover state.
+         * @param {HTMLElement} tooltipEl - The tooltip element.
+         */
+        scheduleInstructionsTooltipHide: function(state, tooltipEl) {
+            this.clearInstructionsTooltipHide(state);
+            state.hideTimeout = setTimeout(() => {
+                if (!state.isHoveringTrigger && !state.isHoveringTooltip) {
+                    tooltipEl.style.display = 'none';
+                }
+                state.hideTimeout = null;
+            }, 250);
+        },
+
+        /**
+         * Position and show the instructions tooltip for a task row.
+         *
+         * @param {HTMLElement} tooltipEl - The tooltip element.
+         * @param {HTMLElement} wrapper - The trigger wrapper.
+         * @param {string} content - Instruction text.
+         */
+        showInstructionsTooltip: function(tooltipEl, wrapper, content) {
+            const text = (content && content.trim()) ? content.trim() : null;
+            if (text) {
+                tooltipEl.textContent = text;
+            } else {
+                Str.get_string('noinstructions', 'block_dixeo_modulegen').then((s) => {
+                    tooltipEl.textContent = s;
+                });
+            }
+
+            const rect = wrapper.getBoundingClientRect();
+            const gap = 2;
+            tooltipEl.classList.remove('task-instructions-tooltip--above', 'task-instructions-tooltip--below');
+            tooltipEl.classList.add('task-instructions-tooltip--below');
+            tooltipEl.style.top = (rect.bottom + gap) + 'px';
+            tooltipEl.style.left = rect.left + 'px';
+            tooltipEl.style.display = 'block';
+
+            requestAnimationFrame(() => {
+                const tr = tooltipEl.getBoundingClientRect();
+                if (tr.bottom > window.innerHeight - 8) {
+                    tooltipEl.classList.remove('task-instructions-tooltip--below');
+                    tooltipEl.classList.add('task-instructions-tooltip--above');
+                    tooltipEl.style.top = (rect.top - tr.height - gap) + 'px';
+                }
+                if (tr.right > window.innerWidth - 8) {
+                    tooltipEl.style.left = (window.innerWidth - tr.width - 8) + 'px';
+                }
+                if (parseInt(tooltipEl.style.left, 10) < 8) {
+                    tooltipEl.style.left = '8px';
+                }
             });
         },
 

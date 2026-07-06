@@ -19,7 +19,8 @@ $string['notavailable'] = 'This module is not available or not properly configur
 $string['pluginrequired'] = 'Install the {$a} plugin to generate this activity type.';
 
 $string['generate'] = 'Generate';
-$string['prompt_placeholder'] = 'Editing instructions for the AI';
+$string['add'] = 'Add';
+$string['prompt_placeholder'] = 'Generation instructions for Dixeo';
 $string['loading'] = 'Generating...';
 
 $string['error_title'] = 'Oops!';
@@ -58,6 +59,8 @@ $string['removefromdisplay'] = 'Remove from display';
 $string['cancelgeneration'] = 'Cancel generation';
 $string['completedon'] = 'Completed on {$a}';
 $string['viewinstructions'] = 'View instructions';
+$string['copyinstructions'] = 'Copy instructions';
+$string['instructionscopied'] = 'Instructions copied';
 $string['noinstructions'] = 'No instructions for this task.';
 $string['retry'] = 'Retry';
 $string['retrygeneration'] = 'Retry generation';
@@ -87,20 +90,25 @@ $string['category_content'] = 'Content';
 $string['category_resource'] = 'Resources';
 $string['category_interactive'] = 'Interactive';
 $string['category_assessment'] = 'Assessment';
-$string['category_manual_upload'] = 'Manual upload';
 
-// Manual upload modal.
-$string['manual_upload_name_label'] = 'Activity name';
-$string['manual_upload_file_label'] = 'File';
-$string['manual_upload_create'] = 'Add activity';
+// Upload modal.
 $string['manual_upload_drag'] = 'Drag and drop a file here, or click to browse';
 $string['manual_upload_browse'] = 'Choose a file';
-$string['manual_upload_error_missing'] = 'Activity name and file are required.';
+$string['manual_upload_uploading'] = 'Uploading...';
+$string['manual_upload_error_missing'] = 'A file is required.';
 $string['manual_upload_error_failed'] = 'Could not create the activity.';
-$string['manual_upload_scorm_description'] = 'Only Articulate Storyline SCORM packages (.zip) are currently supported. When file sync is enabled for this course, uploaded packages are added to the knowledge base used by AI content generation and the tutor.';
-$string['manual_upload_resource_description'] = '{$a->allowedtypes} For the tutor and AI content generation, these formats are indexed: {$a->ragformats}. Other uploaded file types are stored in the course but not added to the knowledge base.';
-$string['manual_upload_resource_allowedtypes_all'] = 'You can upload any file type supported by Moodle (same as the standard File activity).';
+$string['manual_upload_error_invalid_scorm'] = 'Only Articulate Storyline SCORM packages (.zip) are accepted.';
+$string['manual_upload_error_invalid_resource'] = 'Only these file formats are accepted: {$a->ragformats}.';
+$string['manual_upload_error_file_too_large'] = 'File is too large. Please upload a file smaller than {$a->maxsize}.';
+$string['manual_upload_scorm_description'] = 'Articulate Storyline SCORM packages (.zip) only.';
+$string['manual_upload_resource_description'] = 'Accepted formats: {$a->ragformats}. (Max {$a->maxsize})';
 
-// SCORM manual upload.
+// Queue notifications.
+$string['task_completed_success'] = 'Activity "<a href="{$a->link}">{$a->name}</a>" was created.';
+$string['manual_upload_success'] = 'Activity "<a href="{$a->link}">{$a->name}</a>" was added. File sync has started.';
+$string['task_failed'] = 'Module generation failed: {$a->error}';
+$string['queue_manual_upload_label'] = 'Manual upload';
+
+// SCORM upload.
 $string['scorm_package_help'] = 'Upload a SCORM package (.zip)';
 $string['scorm_package_invalid'] = 'The uploaded file is not a valid SCORM package.';
