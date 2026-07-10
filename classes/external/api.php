@@ -132,8 +132,8 @@ class api extends external_api {
     /**
      * Submit a module generation request.
      *
-     * If no active job exists for the course, submits to API immediately.
-     * Otherwise, queues as pending to wait for the active job.
+     * Inserts a PENDING queue row and schedules background processing (file sync then API submit).
+     * Returns immediately with status queued; jobid is empty until the processor runs.
      *
      * @param int $courseid The course ID.
      * @param string $modulename The module type to generate.
@@ -141,7 +141,7 @@ class api extends external_api {
      * @param int $sectionnumber Section number to add module to.
      * @param int $beforemod Course module ID to insert before.
      * @param string|null $lang Language code for content.
-     * @return array Result with queue_id, job_id, and status.
+     * @return array Result with queue_id, empty job_id, and status queued.
      */
     public static function submit_generation(
         int $courseid,
@@ -198,7 +198,7 @@ class api extends external_api {
             'success' => new external_value(PARAM_BOOL, 'Whether submission succeeded'),
             'queueid' => new external_value(PARAM_INT, 'Queue record ID'),
             'jobid' => new external_value(PARAM_RAW, 'Dixeo job UUID (empty if queued)', VALUE_DEFAULT, ''),
-            'status' => new external_value(PARAM_TEXT, 'Status: processing, queued, or error'),
+            'status' => new external_value(PARAM_TEXT, 'Status: queued on success, or error'),
             'error' => new external_single_structure([
                 'code' => new external_value(PARAM_TEXT, 'Error code'),
                 'message' => new external_value(PARAM_TEXT, 'Error message'),
@@ -527,10 +527,17 @@ class api extends external_api {
         ?string $nameoverride,
         string $summaryraw
     ): array {
+        global $USER;
+
         $moduleservice = service_factory::get_module_generation_service();
         $jobservice = service_factory::get_job_service();
         $filljobid = '';
         try {
+            service_factory::get_file_sync_service()->ensure_enabled_and_synchronized(
+                $courseid,
+                (int) $USER->id
+            );
+
             $operation = $moduleservice->submit_fill_job_for_course(
                 $modulename,
                 $instructions,

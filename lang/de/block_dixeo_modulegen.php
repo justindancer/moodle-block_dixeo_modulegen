@@ -107,6 +107,7 @@ $string['manual_upload_resource_description'] = 'Akzeptierte Formate: {$a->ragfo
 $string['task_completed_success'] = 'Aktivität „<a href="{$a->link}">{$a->name}</a>“ wurde erstellt.';
 $string['manual_upload_success'] = 'Aktivität „<a href="{$a->link}">{$a->name}</a>“ wurde hinzugefügt. Die Dateisynchronisation wurde gestartet.';
 $string['task_failed'] = 'Modulgenerierung fehlgeschlagen: {$a->error}';
+$string['task_process_modulegen_queue'] = 'Dixeo-Modulgenerierungs-Warteschlange verarbeiten';
 $string['queue_manual_upload_label'] = 'Manueller Upload';
 
 // SCORM upload.
