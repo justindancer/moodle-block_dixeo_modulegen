@@ -173,8 +173,6 @@ https://www.dixeo.com
 
 support@dixeo.com
 
----
-
 # License
 
 Copyright © Edunao SAS
