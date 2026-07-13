@@ -55,8 +55,10 @@ The Module Generator can generate the following Moodle activities:
 # Configuration
 
 The Module Generator has **no plugin-specific configuration settings**.
-Once installed, teachers simply add the **Dixeo Module Generator** block to a course.
+
 All AI configuration (API endpoint, credentials, image generation, credits, etc.) is defined in the  **[Dixeo AI](../../../moodle-local_dixeo)** plugin.
+
+Once installed, teachers simply add the **Dixeo Module Generator** block to a course.
 
 # Adding the Module Generator to a Course
 
