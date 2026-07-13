@@ -160,8 +160,7 @@ For the best results:
 The Dixeo AI suite includes:
 
 - **Dixeo AI** – Core AI services and platform integration.
-- **Dixeo Course Designer** – Generate complete Moodle courses.
-- **Dixeo Module Generator** – Generate new activities inside existing courses.
+- **Dixeo Course Designer** – Design and generate complete Moodle courses.
 - **Dixeo AI Editor** – AI-assisted editing of Moodle content.
 - **Dixeo Student Tutor** – AI teaching assistant for students.
 
@@ -170,10 +169,8 @@ The Dixeo AI suite includes:
 For documentation, licensing or technical support:
 
 **Dixeo**
-
-https://www.dixeo.com
-
-support@dixeo.com
+- https://www.dixeo.com
+- support@dixeo.com
 
 # License
 
